@@ -4,11 +4,13 @@ import type {
 import type { AppCopy } from "@/lib/i18n";
 import type { ScenarioTokenEstimate } from "@/lib/scenarioTokens";
 import { toSafeNumber } from "@/lib/safeNumber";
+import { InlineTokenEstimator } from "./TokenEstimator";
 
 interface ScenarioParamsProps {
   params: ScenarioParamsType;
   tokenEstimate: ScenarioTokenEstimate;
   copy: AppCopy["scenarioParams"];
+  estimatorCopy: AppCopy["tokenEstimator"];
   onChange: (params: ScenarioParamsType) => void;
 }
 
@@ -19,12 +21,15 @@ interface FieldConfig<T extends object> {
   step?: number;
   max?: number;
   integer?: boolean;
+  /** If true, show the inline token estimator button */
+  estimable?: boolean;
 }
 
 export function ScenarioParams({
   params,
   tokenEstimate,
   copy,
+  estimatorCopy,
   onChange,
 }: ScenarioParamsProps) {
   return (
@@ -40,7 +45,7 @@ export function ScenarioParams({
           {copy.description}
         </p>
       </div>
-      {renderFields(params, copy, onChange)}
+      {renderFields(params, copy, estimatorCopy, onChange)}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <MetricCard label={copy.avgInput} value={tokenEstimate.avgInputTokens} />
         <MetricCard label={copy.avgOutput} value={tokenEstimate.avgOutputTokens} />
@@ -55,16 +60,20 @@ export function ScenarioParams({
 function renderFields(
   params: ScenarioParamsType,
   copy: AppCopy["scenarioParams"],
+  estimatorCopy: AppCopy["tokenEstimator"],
   onChange: (params: ScenarioParamsType) => void,
 ) {
   const field = (key: string, fallback: { label: string; hint: string }) =>
     copy.fields[key] ?? fallback;
 
   switch (params.kind) {
-    case "chatbot":
+    case "chatbot": {
+      const p = params;
+      const handleEstimate = (key: string, tokens: number) =>
+        onChange({ kind: "chatbot", values: { ...p.values, [key]: tokens } as typeof p.values });
       return (
         <FieldGrid
-          values={params.values}
+          values={p.values}
           fields={[
             {
               key: "systemPromptTokens",
@@ -79,6 +88,7 @@ function renderFields(
                 label: "User message tokens",
                 hint: "Average user message length.",
               }),
+              estimable: true,
             },
             {
               key: "historyTokens",
@@ -93,15 +103,22 @@ function renderFields(
                 label: "Answer tokens",
                 hint: "Average model response length.",
               }),
+              estimable: true,
             },
           ]}
+          estimatorCopy={estimatorCopy}
           onChange={(values) => onChange({ kind: "chatbot", values })}
+          onEstimate={handleEstimate}
         />
       );
-    case "rag":
+    }
+    case "rag": {
+      const p = params;
+      const handleEstimate = (key: string, tokens: number) =>
+        onChange({ kind: "rag", values: { ...p.values, [key]: tokens } as typeof p.values });
       return (
         <FieldGrid
-          values={params.values}
+          values={p.values}
           fields={[
             {
               key: "systemPromptTokens",
@@ -116,6 +133,7 @@ function renderFields(
                 label: "User question tokens",
                 hint: "Average question length.",
               }),
+              estimable: true,
             },
             {
               key: "topK",
@@ -132,6 +150,7 @@ function renderFields(
                 label: "Avg chunk tokens",
                 hint: "Average token length per retrieved chunk.",
               }),
+              estimable: true,
             },
             {
               key: "answerTokens",
@@ -139,15 +158,22 @@ function renderFields(
                 label: "Answer tokens",
                 hint: "Average grounded answer length.",
               }),
+              estimable: true,
             },
           ]}
+          estimatorCopy={estimatorCopy}
           onChange={(values) => onChange({ kind: "rag", values })}
+          onEstimate={handleEstimate}
         />
       );
-    case "agent":
+    }
+    case "agent": {
+      const p = params;
+      const handleEstimate = (key: string, tokens: number) =>
+        onChange({ kind: "agent", values: { ...p.values, [key]: tokens } as typeof p.values });
       return (
         <FieldGrid
-          values={params.values}
+          values={p.values}
           fields={[
             {
               key: "baseCalls",
@@ -180,6 +206,7 @@ function renderFields(
                 label: "Tool result tokens",
                 hint: "Average tool output returned to the model.",
               }),
+              estimable: true,
             },
             {
               key: "finalAnswerTokens",
@@ -187,15 +214,22 @@ function renderFields(
                 label: "Answer tokens / call",
                 hint: "Average output per model call.",
               }),
+              estimable: true,
             },
           ]}
+          estimatorCopy={estimatorCopy}
           onChange={(values) => onChange({ kind: "agent", values })}
+          onEstimate={handleEstimate}
         />
       );
-    case "code":
+    }
+    case "code": {
+      const p = params;
+      const handleEstimate = (key: string, tokens: number) =>
+        onChange({ kind: "code", values: { ...p.values, [key]: tokens } as typeof p.values });
       return (
         <FieldGrid
-          values={params.values}
+          values={p.values}
           fields={[
             {
               key: "codeContextTokens",
@@ -203,6 +237,7 @@ function renderFields(
                 label: "Code context tokens",
                 hint: "Files, snippets, and diagnostics in context.",
               }),
+              estimable: true,
             },
             {
               key: "userQuestionTokens",
@@ -210,6 +245,7 @@ function renderFields(
                 label: "User question tokens",
                 hint: "Average developer prompt length.",
               }),
+              estimable: true,
             },
             {
               key: "sessionTurns",
@@ -226,15 +262,22 @@ function renderFields(
                 label: "Output tokens / turn",
                 hint: "Average code or explanation generated per turn.",
               }),
+              estimable: true,
             },
           ]}
+          estimatorCopy={estimatorCopy}
           onChange={(values) => onChange({ kind: "code", values })}
+          onEstimate={handleEstimate}
         />
       );
-    case "summarizer":
+    }
+    case "summarizer": {
+      const p = params;
+      const handleEstimate = (key: string, tokens: number) =>
+        onChange({ kind: "summarizer", values: { ...p.values, [key]: tokens } as typeof p.values });
       return (
         <FieldGrid
-          values={params.values}
+          values={p.values}
           fields={[
             {
               key: "documentTokens",
@@ -242,6 +285,7 @@ function renderFields(
                 label: "Document tokens",
                 hint: "Average input document length.",
               }),
+              estimable: true,
             },
             {
               key: "compressionRatio",
@@ -253,20 +297,27 @@ function renderFields(
               max: 1,
             },
           ]}
+          estimatorCopy={estimatorCopy}
           onChange={(values) => onChange({ kind: "summarizer", values })}
+          onEstimate={handleEstimate}
         />
       );
+    }
   }
 }
 
 function FieldGrid<T extends object>({
   values,
   fields,
+  estimatorCopy,
   onChange,
+  onEstimate,
 }: {
   values: T;
   fields: FieldConfig<T>[];
+  estimatorCopy: AppCopy["tokenEstimator"];
   onChange: (values: T) => void;
+  onEstimate: (key: string, tokens: number) => void;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -280,12 +331,16 @@ function FieldGrid<T extends object>({
           step={field.step}
           max={field.max}
           integer={field.integer}
+          estimable={field.estimable}
+          estimatorCopy={estimatorCopy}
+          fieldLabel={field.label}
           onChange={(next) =>
             onChange({
               ...values,
               [field.key]: next,
             })
           }
+          onEstimate={(tokens) => onEstimate(String(field.key), tokens)}
         />
       ))}
     </div>
@@ -300,7 +355,11 @@ function NumberField({
   step = 1,
   max,
   integer,
+  estimable,
+  estimatorCopy,
+  fieldLabel,
   onChange,
+  onEstimate,
 }: {
   id: string;
   label: string;
@@ -309,16 +368,30 @@ function NumberField({
   step?: number;
   max?: number;
   integer?: boolean;
+  estimable?: boolean;
+  estimatorCopy: AppCopy["tokenEstimator"];
+  fieldLabel: string;
   onChange: (value: number) => void;
+  onEstimate: (tokens: number) => void;
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label
-        htmlFor={`scenario-${id}`}
-        className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
-      >
-        {label}
-      </label>
+      <div className="flex items-center justify-between">
+        <label
+          htmlFor={`scenario-${id}`}
+          className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+        >
+          {label}
+        </label>
+        {estimable && (
+          <InlineTokenEstimator
+            copy={estimatorCopy}
+            fieldLabel={fieldLabel}
+            currentValue={value}
+            onApply={onEstimate}
+          />
+        )}
+      </div>
       <input
         id={`scenario-${id}`}
         type="number"
@@ -326,7 +399,7 @@ function NumberField({
         min={0}
         max={max}
         step={step}
-        value={Number.isFinite(value) ? value : 0}
+        value={Number.isFinite(value) && value > 0 ? value : ""}
         onChange={(e) =>
           onChange(
             toSafeNumber(e.target.value, 0, {
@@ -337,7 +410,7 @@ function NumberField({
           )
         }
         className={[
-          "w-full rounded-lg border px-3 py-2 text-sm tabular-nums",
+          "w-full rounded-lg border px-3 py-2 text-sm tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
           "border-zinc-300 bg-white text-zinc-900",
           "focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900",
           "dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100",

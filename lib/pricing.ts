@@ -1,17 +1,16 @@
 /**
- * Manual snapshot of official AI API pricing.
+ * AI model pricing data.
  *
- * Source policy (see AGENTS.md section 5):
- *   - Each model records the official pricing page it was taken from (`sourceUrl`)
- *     and the date it was verified (`checkedDate`).
- *   - These numbers are an estimate snapshot, not a billing dashboard.
- *   - Aggregator sources (OpenRouter, LiteLLM) are NOT used as the primary
- *     source; they may only appear as optional references in future work.
+ * Data source: https://github.com/simonw/llm-prices
+ * API: https://www.llm-prices.com/current-v1.json
  *
  * Prices are USD per 1,000,000 tokens (i.e. per 1M).
  *
- * P1+: For live pricing data, use getLlmPricesData() from llmPricesApi.ts
- * which fetches from simonw/llm-prices API.
+ * The page fetches live pricing data from the llm-prices API on load.
+ * Static fallback is used when the API is unavailable.
+ *
+ * Note: Each model also stores its original official pricing page URL
+ * (sourceUrl) and verification date (checkedDate).
  */
 
 export type Provider =

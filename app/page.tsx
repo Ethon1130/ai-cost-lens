@@ -54,12 +54,11 @@ import { PricingSources } from "@/components/PricingSources";
 import { SavingsComparison } from "@/components/SavingsComparison";
 import { ScenarioParams } from "@/components/ScenarioParams";
 import { ScenarioPresets } from "@/components/ScenarioPresets";
-import { TokenEstimator } from "@/components/TokenEstimator";
 import { UsageForm } from "@/components/UsageForm";
-import { computeBudgetReport, computeCostReport, quickToStandardUsage } from "@/lib/calculate";
+import { computeBudgetReport, computeCostReport, computeQuickMonthlyRequests, quickToStandardUsage } from "@/lib/calculate";
 import type { UsageInput } from "@/lib/calculate";
 import { FIXED_FALLBACK_RATE, loadExchangeRate } from "@/lib/currency";
-import type { Currency } from "@/lib/currency";
+import type { Currency, FxSource } from "@/lib/currency";
 import { COPY } from "@/lib/i18n";
 import type { AppCopy, Language, ThemeMode } from "@/lib/i18n";
 import { MODELS } from "@/lib/pricing";
@@ -86,16 +85,18 @@ export default function Home() {
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const [currency, setCurrency] = useState<Currency>("USD");
   const [exchangeRate, setExchangeRate] = useState<number>(FIXED_FALLBACK_RATE);
-  const [rateStatus, setRateStatus] = useState<"idle" | "loading" | "live" | "fallback">("idle");
+  const [fxSource, setFxSource] = useState<FxSource>("fallback");
 
   // Primary mode: quick (new user-friendly) vs advanced (existing developer mode)
   const [primaryMode, setPrimaryMode] = useState<PrimaryMode>("quick");
 
   // Quick estimation state
-  const defaultQuickScenario = QUICK_SCENARIOS[0];
+  const defaultQuickScenario =
+    QUICK_SCENARIOS.find((scenario) => scenario.id === "code-assistant") ?? QUICK_SCENARIOS[0];
   const [quickScenarioId, setQuickScenarioId] = useState(defaultQuickScenario.id);
-  const [quickDailyUsers, setQuickDailyUsers] = useState(1000);
-  const [quickRequestsPerUser, setQuickRequestsPerUser] = useState(5);
+  const [quickApiCallsPerDay, setQuickApiCallsPerDay] = useState(100);
+  const [quickDaysPerMonth, setQuickDaysPerMonth] = useState(30);
+  const [quickActiveUsers, setQuickActiveUsers] = useState(0);
   const [quickInputIndex, setQuickInputIndex] = useState(defaultQuickScenario.defaultInputIndex);
   const [quickOutputIndex, setQuickOutputIndex] = useState(defaultQuickScenario.defaultOutputIndex);
 
@@ -145,11 +146,10 @@ export default function Home() {
   // Load live FX rate once on mount; never blocks first paint.
   useEffect(() => {
     let cancelled = false;
-    setRateStatus("loading");
     loadExchangeRate().then((result) => {
       if (cancelled) return;
       setExchangeRate(result.rate);
-      setRateStatus(result.source);
+      setFxSource(result.source);
     });
     return () => { cancelled = true; };
   }, []);
@@ -160,55 +160,6 @@ export default function Home() {
     setActiveScenarioId(next.id);
     setScenarioParams(next.params);
     setUsage(next.usage);
-  };
-
-  const handleApplyTokenEstimate = (tokens: number) => {
-    const safeTokens = Number.isFinite(tokens) && tokens >= 0 ? tokens : 0;
-
-    setScenarioParams((current) => {
-      switch (current.kind) {
-        case "chatbot":
-          return {
-            ...current,
-            values: {
-              ...current.values,
-              userMessageTokens: safeTokens,
-            },
-          };
-        case "rag":
-          return {
-            ...current,
-            values: {
-              ...current.values,
-              userQuestionTokens: safeTokens,
-            },
-          };
-        case "agent":
-          return {
-            ...current,
-            values: {
-              ...current.values,
-              toolResultTokens: safeTokens,
-            },
-          };
-        case "code":
-          return {
-            ...current,
-            values: {
-              ...current.values,
-              codeContextTokens: safeTokens,
-            },
-          };
-        case "summarizer":
-          return {
-            ...current,
-            values: {
-              ...current.values,
-              documentTokens: safeTokens,
-            },
-          };
-      }
-    });
   };
 
   const tokenEstimate = useMemo(
@@ -240,21 +191,35 @@ export default function Home() {
     [monthlyBudget, tokenEstimate, models],
   );
 
-  const quickMonthlyRequests = useMemo(
-    () => quickDailyUsers * quickRequestsPerUser * 30,
-    [quickDailyUsers, quickRequestsPerUser],
-  );
-
   const quickScenario = getQuickScenarioById(quickScenarioId) ?? QUICK_SCENARIOS[0];
   const quickTokens = getQuickScenarioTokens(quickScenario, quickInputIndex, quickOutputIndex);
+  const quickMonthlyRequests = useMemo(
+    () =>
+      computeQuickMonthlyRequests({
+        apiCallsPerDay: quickApiCallsPerDay,
+        daysPerMonth: quickDaysPerMonth,
+        activeUsers: quickActiveUsers,
+        avgInputTokens: quickTokens.avgInputTokens,
+        avgOutputTokens: quickTokens.avgOutputTokens,
+      }),
+    [
+      quickApiCallsPerDay,
+      quickDaysPerMonth,
+      quickActiveUsers,
+      quickTokens.avgInputTokens,
+      quickTokens.avgOutputTokens,
+    ],
+  );
+
   const quickUsage = useMemo(
     () => quickToStandardUsage({
-      dailyUsers: quickDailyUsers,
-      requestsPerUserPerDay: quickRequestsPerUser,
+      apiCallsPerDay: quickApiCallsPerDay,
+      daysPerMonth: quickDaysPerMonth,
+      activeUsers: quickActiveUsers,
       avgInputTokens: quickTokens.avgInputTokens,
       avgOutputTokens: quickTokens.avgOutputTokens,
     }),
-    [quickDailyUsers, quickRequestsPerUser, quickTokens],
+    [quickApiCallsPerDay, quickDaysPerMonth, quickActiveUsers, quickTokens],
   );
   const quickReport = useMemo(
     () => computeCostReport(quickUsage, models),
@@ -300,21 +265,20 @@ export default function Home() {
               >
                 {themeMode === "light" ? <MoonIcon /> : <SunIcon />}
               </IconToggle>
-              <IconToggle
+              <CurrencyToggleButton
+                fxSource={fxSource}
                 label={currency === "USD" ? copy.controls.currencyCny : copy.controls.currencyUsd}
+                rateLabel={
+                  fxSource === "live"
+                    ? copy.controls.rateLive.replace("{rate}", exchangeRate.toFixed(4))
+                    : copy.controls.rateDemo
+                }
                 onClick={() => setCurrency(currency === "USD" ? "CNY" : "USD")}
               >
                 {currency === "USD" ? <DollarIcon /> : <YuanIcon />}
-              </IconToggle>
+              </CurrencyToggleButton>
             </div>
           </div>
-          {rateStatus !== "idle" && (
-            <p className="text-xs text-zinc-400 dark:text-zinc-600">
-              {rateStatus === "live"
-                ? copy.controls.rateLive.replace("{rate}", exchangeRate.toFixed(4))
-                : copy.controls.rateDemo}
-            </p>
-          )}
         </header>
 
         {/* Primary Mode Toggle (Quick vs Advanced) */}
@@ -329,9 +293,11 @@ export default function Home() {
           <div className="space-y-6">
             <QuickEstimateForm
               copy={copy.quickEstimate}
+              scenarioCopy={copy.quickScenarios}
               selectedScenarioId={quickScenarioId}
-              dailyUsers={quickDailyUsers}
-              requestsPerUserPerDay={quickRequestsPerUser}
+              apiCallsPerDay={quickApiCallsPerDay}
+              daysPerMonth={quickDaysPerMonth}
+              activeUsers={quickActiveUsers}
               inputIndex={quickInputIndex}
               outputIndex={quickOutputIndex}
               onScenarioChange={(id) => {
@@ -342,8 +308,9 @@ export default function Home() {
                   setQuickOutputIndex(s.defaultOutputIndex);
                 }
               }}
-              onDailyUsersChange={setQuickDailyUsers}
-              onRequestsPerUserChange={setQuickRequestsPerUser}
+              onApiCallsPerDayChange={setQuickApiCallsPerDay}
+              onDaysPerMonthChange={setQuickDaysPerMonth}
+              onActiveUsersChange={setQuickActiveUsers}
               onInputIndexChange={setQuickInputIndex}
               onOutputIndexChange={setQuickOutputIndex}
             />
@@ -389,14 +356,8 @@ export default function Home() {
           params={scenarioParams}
           tokenEstimate={tokenEstimate}
           copy={copy.scenarioParams}
+          estimatorCopy={copy.tokenEstimator}
           onChange={setScenarioParams}
-        />
-        {/* TODO(P1): 在 TokenEstimator 下方增加 BatchModeToggle（批处理开关），
-          启用后 computeCostReport 应用 batch discount（OpenAI 50% / Anthropic 类似折扣）。 */}
-        <TokenEstimator
-          scenarioKind={scenarioParams.kind}
-          copy={copy.tokenEstimator}
-          onApply={handleApplyTokenEstimate}
         />
         <CalculationModeToggle
           mode={calculationMode}
@@ -453,6 +414,7 @@ export default function Home() {
               budget={monthlyBudget}
               report={budgetReport}
               copy={copy.budget}
+              modelFilterCopy={copy.modelFilter}
               onBudgetChange={setMonthlyBudget}
               currency={currency}
               exchangeRate={exchangeRate}
@@ -502,25 +464,40 @@ function PrimaryModeToggle({
       description: copy.advancedDescription,
     },
   ];
+  const activeIndex = options.findIndex((o) => o.id === mode);
 
   return (
     <section aria-labelledby="primary-mode-heading" className="space-y-3">
-      <div className="flex gap-2 rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-950">
+      <div
+        role="tablist"
+        className="relative flex gap-1 rounded-lg border border-zinc-200 bg-zinc-100/70 p-1 dark:border-zinc-800 dark:bg-zinc-900/60"
+      >
+        {/* sliding indicator */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-md bg-white shadow-sm ring-1 ring-zinc-900/5 transition-transform duration-200 ease-out dark:bg-zinc-100"
+          style={{
+            transform: `translateX(${activeIndex * 100}%)`,
+            transitionProperty: "transform, width",
+          }}
+        />
         {options.map((option) => {
           const active = option.id === mode;
           return (
             <button
               key={option.id}
               type="button"
-              aria-pressed={active}
+              role="tab"
+              aria-selected={active}
               onClick={() => onChange(option.id)}
               className={[
-                "flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors",
-                "focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2",
-                "dark:focus:ring-zinc-100 dark:focus:ring-offset-black",
+                "relative z-10 flex-1 min-w-0 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium",
+                "transition-colors duration-150",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2",
+                "dark:focus-visible:ring-zinc-100 dark:focus-visible:ring-offset-zinc-900",
                 active
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                  : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900",
+                  ? "text-zinc-900 dark:text-zinc-950"
+                  : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100",
               ].join(" ")}
             >
               {option.label}
@@ -581,12 +558,12 @@ function CalculationModeToggle({
               aria-pressed={active}
               onClick={() => onChange(option.id)}
               className={[
-                "rounded-xl border p-4 text-left transition-colors",
-                "focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2",
-                "dark:focus:ring-zinc-100 dark:focus:ring-offset-black",
+                "rounded-xl border p-4 text-left transition-colors duration-150",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2",
+                "dark:focus-visible:ring-zinc-100 dark:focus-visible:ring-offset-zinc-900",
                 active
-                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950"
-                  : "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-600",
+                  ? "border-zinc-900 bg-zinc-900/[0.04] text-zinc-900 dark:border-zinc-100 dark:bg-white/[0.06] dark:text-zinc-100"
+                  : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-900/[0.03] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-white/[0.04]",
               ].join(" ")}
             >
               <span className="block text-sm font-semibold">
@@ -594,9 +571,9 @@ function CalculationModeToggle({
               </span>
               <span
                 className={[
-                  "mt-1 block text-xs",
+                  "mt-1 block text-xs transition-colors duration-150",
                   active
-                    ? "text-zinc-200 dark:text-zinc-700"
+                    ? "text-zinc-600 dark:text-zinc-400"
                     : "text-zinc-500 dark:text-zinc-500",
                 ].join(" ")}
               >
@@ -607,6 +584,60 @@ function CalculationModeToggle({
         })}
       </div>
     </section>
+  );
+}
+
+function CurrencyToggleButton({
+  label,
+  rateLabel,
+  fxSource,
+  children,
+  onClick,
+}: {
+  label: string;
+  rateLabel: string;
+  fxSource: FxSource;
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <div className="group relative">
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        onClick={onClick}
+        className={[
+          "inline-flex size-10 items-center justify-center rounded-lg border transition-colors",
+          "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-950",
+          "focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2",
+          "dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-zinc-100 dark:focus:ring-zinc-100 dark:focus:ring-offset-black",
+        ].join(" ")}
+      >
+        {children}
+      </button>
+      <div
+        role="tooltip"
+        className={[
+          "pointer-events-none absolute right-0 top-full z-20 mt-2 w-max max-w-[16rem]",
+          "rounded-md border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-zinc-700 shadow-md",
+          "opacity-0 translate-y-1 transition duration-150 group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:translate-y-0",
+          "dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200",
+        ].join(" ")}
+      >
+        <div className="font-medium">{rateLabel}</div>
+        <div
+          className={[
+            "mt-0.5 text-[10px] uppercase tracking-wide",
+            fxSource === "live"
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-amber-600 dark:text-amber-400",
+          ].join(" ")}
+        >
+          {fxSource === "live" ? "live" : "fallback"}
+        </div>
+      </div>
+    </div>
   );
 }
 

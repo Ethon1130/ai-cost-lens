@@ -47,12 +47,12 @@ function NumberField({
         inputMode="decimal"
         min={min}
         step={step}
-        value={Number.isFinite(value) ? value : 0}
+        value={Number.isFinite(value) && value > 0 ? value : ""}
         onChange={(e) =>
           onChange(toSafeNumber(e.target.value, 0, { min, max, integer }))
         }
         className={[
-          "w-full rounded-lg border px-3 py-2 text-sm tabular-nums",
+          "w-full rounded-lg border px-3 py-2 text-sm tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
           "border-zinc-300 bg-white text-zinc-900",
           "focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900",
           "dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100",

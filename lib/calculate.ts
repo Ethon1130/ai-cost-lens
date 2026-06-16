@@ -280,31 +280,38 @@ export function formatPercent(value: number): string {
 
 // =============================================================================
 // Quick Estimation Mode (new)
-// Simplified inputs for non-technical users
+// Simplified inputs for fast API-cost estimates
 // =============================================================================
 
 /**
  * Simplified usage input for quick estimation mode.
- * Users select length options instead of raw token numbers.
+ * Developers select length options instead of raw token numbers.
  */
 export interface QuickUsageInput {
-  dailyUsers: number;
-  requestsPerUserPerDay: number;
+  apiCallsPerDay: number;
+  daysPerMonth: number;
+  activeUsers?: number;
   avgInputTokens: number;
   avgOutputTokens: number;
 }
 
 /**
  * Convert quick mode inputs to standard UsageInput for cost calculation.
- * Quick mode calculates monthly requests as: dailyUsers * requestsPerUserPerDay * 30
+ * Quick mode calculates monthly requests as: apiCallsPerDay * daysPerMonth.
  */
 export function quickToStandardUsage(input: QuickUsageInput): UsageInput {
+  const apiCallsPerDay = toSafeNumber(input.apiCallsPerDay, 0);
+  const daysPerMonth = toSafeNumber(input.daysPerMonth, 30, {
+    min: 0,
+    max: 31,
+    integer: true,
+  });
   return {
-    requestsPerDay: input.dailyUsers * input.requestsPerUserPerDay,
-    daysPerMonth: 30,
-    activeUsers: input.dailyUsers,
-    avgInputTokens: input.avgInputTokens,
-    avgOutputTokens: input.avgOutputTokens,
+    requestsPerDay: apiCallsPerDay,
+    daysPerMonth,
+    activeUsers: toSafeNumber(input.activeUsers, 0),
+    avgInputTokens: toSafeNumber(input.avgInputTokens, 0),
+    avgOutputTokens: toSafeNumber(input.avgOutputTokens, 0),
     retryRate: 0,
   };
 }
@@ -313,7 +320,11 @@ export function quickToStandardUsage(input: QuickUsageInput): UsageInput {
  * Compute monthly requests from quick mode inputs.
  */
 export function computeQuickMonthlyRequests(input: QuickUsageInput): number {
-  const dailyUsers = toSafeNumber(input.dailyUsers, 0);
-  const requestsPerUserPerDay = toSafeNumber(input.requestsPerUserPerDay, 0);
-  return dailyUsers * requestsPerUserPerDay * 30;
+  const apiCallsPerDay = toSafeNumber(input.apiCallsPerDay, 0);
+  const daysPerMonth = toSafeNumber(input.daysPerMonth, 30, {
+    min: 0,
+    max: 31,
+    integer: true,
+  });
+  return apiCallsPerDay * daysPerMonth;
 }

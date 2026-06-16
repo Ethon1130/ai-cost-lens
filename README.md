@@ -24,8 +24,7 @@ with the real URL after deployment).
   scenario.
 - Computes monthly requests, monthly input tokens, monthly output tokens, input
   cost, output cost, and total monthly cost.
-- Compares 6 models across OpenAI, Anthropic, and Google using manually checked
-  official pricing snapshots.
+- Compares models across OpenAI, Anthropic, and Google using live pricing data from the llm-prices open-source project.
 - Highlights the cheapest model for the current assumptions.
 - Shows unit economics: monthly cost, cost per request, cost per 1K requests,
   and optional cost per active user per month.
@@ -87,21 +86,18 @@ No environment variables are required.
 
 ## Pricing data policy
 
-- Pricing data lives in `lib/pricing.ts` as a manual snapshot.
+- Pricing data is fetched live from [simonw/llm-prices](https://github.com/simonw/llm-prices) open-source project.
 - Every model includes provider, model name, input price per 1M tokens, output
   price per 1M tokens, official source URL, checked date, and notes.
-- Prices are not refreshed in real time.
-- Prices may change after the checked date.
+- A static fallback is used when the API is unavailable.
+- Prices may change over time.
 - Always verify the latest price on the linked official provider page before
   making a real product or budget decision.
-- Third-party aggregators such as OpenRouter or LiteLLM are not used as primary
-  pricing sources.
 
 ## Known limitations
 
 - This is an estimator / cost simulator, not a billing dashboard.
-- Pricing data is manually collected from official provider pricing pages.
-- Prices may change after the checked date.
+- Pricing data is fetched live from the llm-prices open-source project and may change over time.
 - This project does not call real AI model APIs.
 - No API key is required for the core calculator.
 - The calculator does not include taxes, free tiers, enterprise discounts,
@@ -113,7 +109,7 @@ No environment variables are required.
 - Scenario-specific parameters such as RAG `topK`, Agent calls per task, code
   context size, and summarizer compression ratio are educated defaults, not
   measurements of your real product.
-- Cache hit rate is not included in the P0 calculator.
+- Cache hit rate is not included in the current version.
 - Unit economics are computed from user-input assumptions and do not reflect
   real revenue or billing data.
 - Third-party pricing aggregators, if added later, should only be optional

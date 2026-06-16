@@ -11,32 +11,40 @@ import type { Currency } from "@/lib/currency";
 
 interface QuickEstimateFormProps {
   copy: AppCopy["quickEstimate"];
+  scenarioCopy: AppCopy["quickScenarios"];
   selectedScenarioId: string;
-  dailyUsers: number;
-  requestsPerUserPerDay: number;
+  apiCallsPerDay: number;
+  daysPerMonth: number;
+  activeUsers: number;
   inputIndex: number;
   outputIndex: number;
   onScenarioChange: (id: string) => void;
-  onDailyUsersChange: (v: number) => void;
-  onRequestsPerUserChange: (v: number) => void;
+  onApiCallsPerDayChange: (v: number) => void;
+  onDaysPerMonthChange: (v: number) => void;
+  onActiveUsersChange: (v: number) => void;
   onInputIndexChange: (i: number) => void;
   onOutputIndexChange: (i: number) => void;
 }
 
 export function QuickEstimateForm({
   copy,
+  scenarioCopy,
   selectedScenarioId,
-  dailyUsers,
-  requestsPerUserPerDay,
+  apiCallsPerDay,
+  daysPerMonth,
+  activeUsers,
   inputIndex,
   outputIndex,
   onScenarioChange,
-  onDailyUsersChange,
-  onRequestsPerUserChange,
+  onApiCallsPerDayChange,
+  onDaysPerMonthChange,
+  onActiveUsersChange,
   onInputIndexChange,
   onOutputIndexChange,
 }: QuickEstimateFormProps) {
   const scenario = QUICK_SCENARIOS.find((s) => s.id === selectedScenarioId) ?? QUICK_SCENARIOS[0];
+  const translatedScenario = scenarioCopy[scenario.id];
+  const [showProductLens, setShowProductLens] = useState(false);
 
   return (
     <section aria-labelledby="quick-heading" className="space-y-4">
@@ -82,73 +90,123 @@ export function QuickEstimateForm({
           >
             {QUICK_SCENARIOS.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.title}
+                {scenarioCopy[s.id]?.title ?? s.title}
               </option>
             ))}
           </select>
           <p className="text-xs text-zinc-500 dark:text-zinc-500">
-            {scenario.description}
+            {translatedScenario?.description ?? scenario.description}
           </p>
         </div>
 
-        {/* Traffic inputs */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* API volume inputs */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
             <label
-              htmlFor="quick-daily-users"
+              htmlFor="quick-api-calls-per-day"
               className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
             >
-              {copy.dailyUsersLabel}
+              {copy.apiCallsPerDayLabel}
             </label>
             <input
-              id="quick-daily-users"
+              id="quick-api-calls-per-day"
               type="number"
               inputMode="numeric"
               min={0}
-              value={dailyUsers || ""}
+              value={apiCallsPerDay > 0 ? apiCallsPerDay : ""}
               onChange={(e) =>
-                onDailyUsersChange(toSafeNumber(e.target.value, 0, { min: 0, integer: true }))
+                onApiCallsPerDayChange(toSafeNumber(e.target.value, 0, { min: 0, integer: true }))
               }
-              placeholder="1000"
+              placeholder={copy.placeholder.apiCallsPerDay}
               className={[
-                "w-full rounded-lg border px-3 py-2 text-sm tabular-nums",
+                "w-full rounded-lg border px-3 py-2 text-sm tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
                 "border-zinc-300 bg-white text-zinc-900",
                 "focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900",
                 "dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100",
                 "dark:focus:border-zinc-300 dark:focus:ring-zinc-300",
               ].join(" ")}
             />
-            <p className="text-xs text-zinc-500 dark:text-zinc-500">{copy.dailyUsersHint}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500">{copy.apiCallsPerDayHint}</p>
           </div>
 
           <div className="flex flex-col gap-1">
             <label
-              htmlFor="quick-requests-per-user"
+              htmlFor="quick-days-per-month"
               className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
             >
-              {copy.requestsPerUserLabel}
+              {copy.daysPerMonthLabel}
             </label>
             <input
-              id="quick-requests-per-user"
+              id="quick-days-per-month"
               type="number"
-              inputMode="decimal"
+              inputMode="numeric"
               min={0}
-              step={0.5}
-              value={requestsPerUserPerDay || ""}
+              max={31}
+              value={daysPerMonth > 0 ? daysPerMonth : ""}
               onChange={(e) =>
-                onRequestsPerUserChange(toSafeNumber(e.target.value, 0, { min: 0 }))
+                onDaysPerMonthChange(
+                  toSafeNumber(e.target.value, 30, { min: 0, max: 31, integer: true }),
+                )
               }
-              placeholder="5"
+              placeholder={copy.placeholder.daysPerMonth}
               className={[
-                "w-full rounded-lg border px-3 py-2 text-sm tabular-nums",
+                "w-full rounded-lg border px-3 py-2 text-sm tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
                 "border-zinc-300 bg-white text-zinc-900",
                 "focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900",
                 "dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100",
                 "dark:focus:border-zinc-300 dark:focus:ring-zinc-300",
               ].join(" ")}
             />
-            <p className="text-xs text-zinc-500 dark:text-zinc-500">{copy.requestsPerUserHint}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500">{copy.daysPerMonthHint}</p>
           </div>
+        </div>
+
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950">
+          <button
+            type="button"
+            onClick={() => setShowProductLens((value) => !value)}
+            aria-expanded={showProductLens}
+            className="flex w-full items-center justify-between gap-3 text-left text-sm font-medium text-zinc-800 dark:text-zinc-200"
+          >
+            <span>{copy.productLensToggle}</span>
+            <ChevronDownIcon
+              className={[
+                "size-4 shrink-0 transition-transform",
+                showProductLens ? "rotate-180" : "",
+              ].join(" ")}
+            />
+          </button>
+          {showProductLens && (
+            <div className="mt-3 flex flex-col gap-1">
+              <label
+                htmlFor="quick-active-users"
+                className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+              >
+                {copy.activeUsersLabel}
+              </label>
+              <input
+                id="quick-active-users"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={activeUsers > 0 ? activeUsers : ""}
+                onChange={(e) =>
+                  onActiveUsersChange(toSafeNumber(e.target.value, 0, { min: 0, integer: true }))
+                }
+                placeholder={copy.placeholder.activeUsers}
+                className={[
+                  "w-full rounded-lg border px-3 py-2 text-sm tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
+                  "border-zinc-300 bg-white text-zinc-900",
+                  "focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900",
+                  "dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100",
+                  "dark:focus:border-zinc-300 dark:focus:ring-zinc-300",
+                ].join(" ")}
+              />
+              <p className="text-xs text-zinc-500 dark:text-zinc-500">
+                {copy.activeUsersHint}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Length options */}
@@ -156,12 +214,14 @@ export function QuickEstimateForm({
           <LengthOptionSelector
             label={copy.inputComplexityLabel}
             options={scenario.inputLengthOptions}
+            translatedLabels={translatedScenario?.inputLabels}
             selectedIndex={inputIndex}
             onChange={onInputIndexChange}
           />
           <LengthOptionSelector
             label={copy.outputLengthLabel}
             options={scenario.outputLengthOptions}
+            translatedLabels={translatedScenario?.outputLabels}
             selectedIndex={outputIndex}
             onChange={onOutputIndexChange}
           />
@@ -174,6 +234,7 @@ export function QuickEstimateForm({
 interface LengthOptionSelectorProps {
   label: string;
   options: QuickScenario["inputLengthOptions"] | QuickScenario["outputLengthOptions"];
+  translatedLabels?: string[];
   selectedIndex: number;
   onChange: (index: number) => void;
 }
@@ -181,6 +242,7 @@ interface LengthOptionSelectorProps {
 function LengthOptionSelector({
   label,
   options,
+  translatedLabels,
   selectedIndex,
   onChange,
 }: LengthOptionSelectorProps) {
@@ -189,25 +251,29 @@ function LengthOptionSelector({
       <legend className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
         {label}
       </legend>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option, i) => (
-          <button
-            key={i}
-            type="button"
-            aria-pressed={selectedIndex === i}
-            onClick={() => onChange(i)}
-            className={[
-              "rounded-full px-3 py-1.5 text-sm transition-colors",
-              "focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2",
-              "dark:focus:ring-zinc-100 dark:focus:ring-offset-black",
-              selectedIndex === i
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                : "border border-zinc-300 bg-white text-zinc-700 hover:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-500",
-            ].join(" ")}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className="grid grid-cols-3 gap-2">
+        {options.map((option, i) => {
+          const isActive = selectedIndex === i;
+          return (
+            <button
+              key={i}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() => onChange(i)}
+              title={translatedLabels?.[i] ?? option.label}
+              className={[
+                "min-w-0 truncate whitespace-nowrap rounded-md border px-2 py-1 text-xs font-medium",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-1",
+                "dark:focus-visible:ring-zinc-100 dark:focus-visible:ring-offset-black",
+                isActive
+                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-100",
+              ].join(" ")}
+            >
+              {translatedLabels?.[i] ?? option.label}
+            </button>
+          );
+        })}
       </div>
     </fieldset>
   );
@@ -397,7 +463,7 @@ export function QuickResults({
 
       {providers.length === 0 ? (
         <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-          No models match your filter criteria.
+          {copy.noModelsMatch}
         </div>
       ) : (
         <div className="space-y-3">
@@ -439,7 +505,7 @@ export function QuickResults({
                         </span>
                         {isCheapest && (
                           <span className="inline-flex items-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
-                            Best
+                            {copy.best}
                           </span>
                         )}
                       </div>

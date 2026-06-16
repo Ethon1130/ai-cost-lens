@@ -47,18 +47,13 @@ export interface AppCopy {
     notes: Record<ScenarioKind, string>;
   };
   tokenEstimator: {
-    heading: string;
-    description: string;
-    textareaLabel: string;
     placeholder: string;
     tokenizerLabel: string;
     tokensLabel: string;
-    characters: string;
-    limitNotice: string;
     approximateNotice: string;
     applyButton: string;
-    applyHint: string;
-    targets: Record<ScenarioKind, string>;
+    cancelButton: string;
+    hint: string;
   };
   mode: {
     heading: string;
@@ -167,18 +162,17 @@ export interface AppCopy {
     heading: string;
     items: string[];
   };
-  // TODO(P0): 新增 copy.costBreakdown 段落：
-  //   inputCost / outputCost / cachedInputCost / retryCost / fxImpact / batchDiscount
-  // TODO(P0): 新增 copy.optimization 段落（成本优化建议区块的 i18n）
-  // TODO(P0): 新增 copy.quickEstimate 段落（快速估算模式的 UI 文案）
   quickEstimate: {
     heading: string;
     description: string;
     scenarioLabel: string;
-    dailyUsersLabel: string;
-    dailyUsersHint: string;
-    requestsPerUserLabel: string;
-    requestsPerUserHint: string;
+    apiCallsPerDayLabel: string;
+    apiCallsPerDayHint: string;
+    daysPerMonthLabel: string;
+    daysPerMonthHint: string;
+    productLensToggle: string;
+    activeUsersLabel: string;
+    activeUsersHint: string;
     inputComplexityLabel: string;
     outputLengthLabel: string;
     resultHeading: string;
@@ -186,6 +180,13 @@ export interface AppCopy {
     recommendation: string;
     monthlyRequests: string;
     noTraffic: string;
+    best: string;
+    noModelsMatch: string;
+    placeholder: {
+      apiCallsPerDay: string;
+      daysPerMonth: string;
+      activeUsers: string;
+    };
   };
   primaryMode: {
     quick: string;
@@ -193,11 +194,12 @@ export interface AppCopy {
     advanced: string;
     advancedDescription: string;
   };
-  // TODO(P1): 新增 copy.batchMode 段落（批处理模式开关和说明）
-  // TODO(P1): 新增 copy.combo 段落（模型组合推荐的标题和选项文案）
-  // TODO(P1): 新增 copy.export 段落（导出 Markdown / JSON 按钮文案）
-  // TODO(P1): 新增 copy.billingMode 段落（Token/Runtime/Output 三种计费模型说明）
-  // TODO(P2): 新增 copy.imageCost 段落（图片成本估算器的 UI 文案）
+  quickScenarios: Record<string, {
+    title: string;
+    description: string;
+    inputLabels: string[];
+    outputLabels: string[];
+  }>;
 }
 
 export const COPY: Record<Language, AppCopy> = {
@@ -228,9 +230,9 @@ export const COPY: Record<Language, AppCopy> = {
       badge: "AI Cost Lens",
       title: "AI API cost simulator for early-stage products.",
       description:
-        "Pick a product scenario, tune the token assumptions behind it, and compare monthly cost across official OpenAI (GPT), Anthropic (Claude), and Google (Gemini) pricing snapshots. No account, no API key, no external calls.",
+        "Pick a product scenario, tune the token assumptions behind it, and compare monthly cost across OpenAI (GPT), Anthropic (Claude), and Google (Gemini) pricing. Data is fetched live from the llm-prices open-source project. No account, no API key needed.",
       footer:
-        "Built for indie devs evaluating an AI project. Data is a manual snapshot; verify the latest price on the linked official page before making a decision.",
+        "Built for indie devs evaluating an AI project. Data is sourced from simonw/llm-prices; verify the latest price on each provider's official page before making a decision.",
     },
     scenarios: {
       heading: "1. Pick a scenario",
@@ -345,39 +347,27 @@ export const COPY: Record<Language, AppCopy> = {
       },
     },
     tokenEstimator: {
-      heading: "3. Estimate tokens from real text",
-      description:
-        "Paste a real prompt, code snippet, document, or tool result. The count uses the GPT-4 tokenizer locally in your browser; Claude and Gemini may tokenize the same text differently.",
-      textareaLabel: "Sample text",
       placeholder:
-        "Paste a real user message, RAG question, code context, document, or tool result...",
-      tokenizerLabel: "GPT-4 tokenizer",
-      tokensLabel: "tokens in this sample",
-      characters: "characters",
-      limitNotice: "Text was capped at the local safety limit.",
+        "Paste a real user message, code snippet, document, or tool result...",
+      tokenizerLabel: "Estimated tokens",
+      tokensLabel: "tokens",
       approximateNotice:
-        "Tokenizer failed to load, so this is an approximate characters / 4 estimate.",
-      applyButton: "Apply to current scenario",
-      applyHint: "Applies this count to {target}.",
-      targets: {
-        chatbot: "User message tokens",
-        rag: "User question tokens",
-        agent: "Tool result tokens",
-        code: "Code context tokens",
-        summarizer: "Document tokens",
-      },
+        "Approximate estimate (tokenizer unavailable, using chars / 4).",
+      applyButton: "Apply",
+      cancelButton: "Cancel",
+      hint: "Will set {field} (current: {current}).",
     },
     mode: {
-      heading: "4. Choose calculation mode",
+      heading: "3. Choose calculation mode",
       description:
         "Estimate expected traffic cost, or reverse the question from a fixed monthly budget.",
       trafficMode: "Traffic Mode",
       trafficDescription: "How much will my expected usage cost?",
-      budgetMode: "Budget Mode",
+      budgetMode: "Budget Setup",
       budgetDescription: "How many requests can my budget support?",
     },
     usage: {
-      heading: "5. Estimate API usage",
+      heading: "4. Estimate API usage",
       description:
         "Estimate direct API call volume first. Active users are optional and only affect the per-user product lens.",
       requestsPerDay: "API requests / day",
@@ -436,7 +426,7 @@ export const COPY: Record<Language, AppCopy> = {
         "Enter a monthly budget above $0 and keep token assumptions above 0 to see runway estimates.",
     },
     savings: {
-      heading: "6. Model savings comparison",
+      heading: "7. Model savings comparison",
       description:
         "Estimated savings if the highest-cost model in this snapshot is replaced by the cheapest model for the same traffic and tokens.",
       cheapest: "Cheapest",
@@ -447,7 +437,7 @@ export const COPY: Record<Language, AppCopy> = {
       to: "to",
     },
     table: {
-      heading: "7. Per-model monthly cost",
+      heading: "8. Per-model monthly cost",
       description:
         "Scroll horizontally on small screens. Cheapest model is highlighted.",
       select: "Sel",
@@ -478,9 +468,9 @@ export const COPY: Record<Language, AppCopy> = {
       clear: "Clear",
     },
     sources: {
-      heading: "8. Pricing sources",
+      heading: "9. Pricing sources",
       description:
-        "All numbers are manually collected from each provider's official pricing page. The Checked date is when the snapshot was last verified.",
+        "Prices are fetched live from the llm-prices open-source project. The Checked date shows when each model's data was last updated at the source.",
       input: "Input",
       output: "Output",
       checked: "Checked",
@@ -489,25 +479,28 @@ export const COPY: Record<Language, AppCopy> = {
       heading: "Known limitations",
       items: [
         "This is an estimator, not a billing dashboard.",
-        "Pricing data is manually collected from official provider pricing pages and may change after the checked date.",
+        "Pricing data is fetched live from simonw/llm-prices and may change over time.",
         "This project does not call real AI model APIs.",
         "No API key is required for the core calculator.",
         "The calculator does not include taxes, free tiers, enterprise discounts, regional pricing, latency, model quality, reliability, or rate limits.",
         "Token usage varies by tokenizer, language, and provider; the average numbers you enter are rough assumptions.",
         "The text token estimator uses the GPT tokenizer locally; Claude and Gemini token counts may differ.",
         "Scenario-specific parameters such as RAG chunks and Agent calls are educated defaults, not measurements of your real product.",
-        "Cache hit rate, cache write cost, TTL, subscriptions, taxes, and regional pricing are not included in this P0 calculator.",
+        "Cache hit rate, cache write cost, TTL, subscriptions, taxes, and regional pricing are not included in this calculator.",
         "Exchange rate is a demo rate (live fetch with 7.25 fallback); not a financial-grade FX quote.",
       ],
     },
     quickEstimate: {
       heading: "Quick Estimate",
-      description: "Answer a few simple questions to get a rough monthly cost. No token math required.",
+      description: "Estimate monthly API cost from expected model calls. No token math required.",
       scenarioLabel: "Use case",
-      dailyUsersLabel: "Expected daily active users",
-      dailyUsersHint: "How many users interact with your AI per day",
-      requestsPerUserLabel: "Requests per user / day",
-      requestsPerUserHint: "Average API calls each user makes per day",
+      apiCallsPerDayLabel: "API calls / day",
+      apiCallsPerDayHint: "How many model API calls this project may make on an average day.",
+      daysPerMonthLabel: "Billable days / month",
+      daysPerMonthHint: "Use 30 for a normal month, or less for a short test.",
+      productLensToggle: "Optional product lens",
+      activeUsersLabel: "Active users (optional)",
+      activeUsersHint: "Only used for product unit economics; it does not change monthly cost.",
       inputComplexityLabel: "Input complexity",
       outputLengthLabel: "Output length",
       resultHeading: "Estimated monthly cost",
@@ -515,12 +508,45 @@ export const COPY: Record<Language, AppCopy> = {
       recommendation: "Recommendation",
       monthlyRequests: "Monthly requests",
       noTraffic: "Enter usage above to see cost estimates",
+      best: "Best",
+      noModelsMatch: "No models match your filter criteria.",
+      placeholder: {
+        apiCallsPerDay: "100",
+        daysPerMonth: "30",
+        activeUsers: "0",
+      },
     },
     primaryMode: {
       quick: "Quick Estimate",
-      quickDescription: "For non-technical users",
-      advanced: "Advanced Mode",
-      advancedDescription: "For developers who know their tokens",
+      quickDescription: "Fast API cost estimate",
+      advanced: "Advanced Setup",
+      advancedDescription: "Tune tokens and scenario parameters",
+    },
+    quickScenarios: {
+      "ai-chatbot": {
+        title: "AI Chatbot",
+        description: "Simple conversational scenarios like customer service bots, FAQ assistants.",
+        inputLabels: ["Simple chat", "Normal chat", "Complex multi-turn"],
+        outputLabels: ["Short reply", "Medium reply", "Detailed reply"],
+      },
+      "rag-qa": {
+        title: "RAG Q&A",
+        description: "Retrieval-augmented Q&A for knowledge base scenarios.",
+        inputLabels: ["Simple query", "Complex query", "Deep research"],
+        outputLabels: ["Brief answer", "Detailed explanation", "Comprehensive analysis"],
+      },
+      "code-assistant": {
+        title: "Code Assistant",
+        description: "Code analysis and generation assistance tools.",
+        inputLabels: ["Single file", "Multi-file", "Full codebase"],
+        outputLabels: ["Code snippet", "Complete function", "Project-level changes"],
+      },
+      "summarizer": {
+        title: "Summarizer",
+        description: "Document summarization and content condensing.",
+        inputLabels: ["Short doc (~1 page)", "Long doc (~5 pages)", "Very long doc (~20 pages)"],
+        outputLabels: ["Key points", "Summary", "Detailed summary"],
+      },
     },
   },
   zh: {
@@ -552,7 +578,7 @@ export const COPY: Record<Language, AppCopy> = {
       description:
         "选择产品场景，调整真实 token 假设，并基于 OpenAI (GPT)、Anthropic (Claude)、Google (Gemini) 官方价格快照对比每月成本。无需账号、无需 API key、无需外部调用。",
       footer:
-        "为评估 AI 项目的独立开发者构建。价格数据是人工快照，做决策前请在链接的官方页面核对最新价格。",
+        "为评估 AI 项目的独立开发者构建。价格数据通过 llm-prices 开源项目获取，做决策前请在各服务商官方页面核对最新价格。",
     },
     scenarios: {
       heading: "1. 选择使用场景",
@@ -663,37 +689,25 @@ export const COPY: Record<Language, AppCopy> = {
       },
     },
     tokenEstimator: {
-      heading: "3. 用真实文本估算 Token",
-      description:
-        "粘贴一段真实提示词、代码片段、文档或工具结果。计数会在浏览器本地使用 GPT-4 tokenizer；Claude 和 Gemini 对同一文本的 token 结果可能不同。",
-      textareaLabel: "示例文本",
-      placeholder: "粘贴真实用户消息、RAG 问题、代码上下文、文档或工具结果...",
-      tokenizerLabel: "GPT-4 tokenizer",
-      tokensLabel: "该样本的 token 数",
-      characters: "字符",
-      limitNotice: "文本已被限制在本地安全长度内。",
+      placeholder: "粘贴真实用户消息、代码片段、文档或工具结果...",
+      tokenizerLabel: "估算 token 数",
+      tokensLabel: "tokens",
       approximateNotice:
-        "Tokenizer 加载失败，因此这里使用 characters / 4 的粗略估算。",
-      applyButton: "应用到当前场景",
-      applyHint: "会把这个数值写入：{target}。",
-      targets: {
-        chatbot: "用户消息 token",
-        rag: "用户问题 token",
-        agent: "工具结果 token",
-        code: "代码上下文 token",
-        summarizer: "文档 token",
-      },
+        "粗略估算（tokenizer 不可用，使用 chars / 4）。",
+      applyButton: "应用",
+      cancelButton: "取消",
+      hint: "将设置 {field}（当前值：{current}）。",
     },
     mode: {
-      heading: "4. 选择计算模式",
+      heading: "3. 选择计算模式",
       description: "既可以估算预期流量成本，也可以从固定月预算反推可支持请求量。",
       trafficMode: "流量模式",
       trafficDescription: "我的预期用量大概要花多少钱？",
-      budgetMode: "预算控制模式",
+      budgetMode: "预算模式",
       budgetDescription: "我的预算最多能支持多少请求？",
     },
     usage: {
-      heading: "5. 估算 API 用量",
+      heading: "4. 估算 API 用量",
       description:
         "先直接估算 API 调用量。活跃用户是可选产品视角，只影响每用户成本。",
       requestsPerDay: "每日 API 请求数",
@@ -792,7 +806,7 @@ export const COPY: Record<Language, AppCopy> = {
     sources: {
       heading: "8. 价格来源",
       description:
-        "所有数字均人工采集自各服务商官方价格页面。Checked 日期表示该快照最后核对时间。",
+        "价格数据通过 llm-prices 开源项目实时获取。Checked 日期表示该数据在来源处的最后更新时间。",
       input: "输入",
       output: "输出",
       checked: "已核对",
@@ -801,25 +815,28 @@ export const COPY: Record<Language, AppCopy> = {
       heading: "已知限制",
       items: [
         "这是成本估算器，不是账单后台。",
-        "价格数据人工采集自官方价格页面，可能在核对日期后发生变化。",
+        "价格数据通过 llm-prices 开源项目实时获取，价格可能随时变化。",
         "本项目不会调用真实 AI 模型 API。",
         "核心计算器不需要任何 API key。",
         "计算器不包含税费、免费额度、企业折扣、区域价格、延迟、模型质量、可靠性或速率限制。",
         "Token 用量会受到 tokenizer、语言和服务商影响；你输入的平均值只是粗略假设。",
         "文本 Token 估算器在浏览器本地使用 GPT tokenizer；Claude 和 Gemini 的 token 数可能不同。",
         "RAG chunk 数和 Agent 调用次数等场景参数是经验默认值，不是你的真实产品测量结果。",
-        "这个 P0 计算器暂不包含缓存命中率、缓存写入成本、TTL、订阅收入、税费和区域价格。",
+        "Cache 命中率、缓存写入费用、TTL、订阅折扣、税费和区域价格不在本计算器范围内。",
         "汇率为演示汇率（动态拉取，失败回退 7.25），不是金融级实时报价。",
       ],
     },
     quickEstimate: {
       heading: "快速估算",
-      description: "回答几个简单问题，快速估算月成本。无需了解 token 计算。",
+      description: "根据预计模型 API 调用量估算月成本。无需了解 token 计算。",
       scenarioLabel: "使用场景",
-      dailyUsersLabel: "预计日活用户数",
-      dailyUsersHint: "每天有多少用户使用你的 AI 产品",
-      requestsPerUserLabel: "每人每天调用次数",
-      requestsPerUserHint: "每位用户平均每天发起多少次 API 调用",
+      apiCallsPerDayLabel: "每日 API 调用量",
+      apiCallsPerDayHint: "这个项目平均每天大概会调用多少次模型 API。",
+      daysPerMonthLabel: "每月计费天数",
+      daysPerMonthHint: "普通月份用 30；短期实验可以填更小的数字。",
+      productLensToggle: "可选产品视角",
+      activeUsersLabel: "活跃用户数（可选）",
+      activeUsersHint: "只用于估算每用户成本；不会改变月总成本。",
       inputComplexityLabel: "输入复杂度",
       outputLengthLabel: "输出长度",
       resultHeading: "预计月成本",
@@ -827,12 +844,45 @@ export const COPY: Record<Language, AppCopy> = {
       recommendation: "建议",
       monthlyRequests: "月请求量",
       noTraffic: "输入用量后可查看成本估算",
+      best: "最便宜",
+      noModelsMatch: "没有模型符合筛选条件。",
+      placeholder: {
+        apiCallsPerDay: "100",
+        daysPerMonth: "30",
+        activeUsers: "0",
+      },
     },
     primaryMode: {
       quick: "快速估算",
-      quickDescription: "适合普通用户",
-      advanced: "高级模式",
-      advancedDescription: "适合懂 token 的开发者",
+      quickDescription: "快速估算 API 成本",
+      advanced: "高级设置",
+      advancedDescription: "调整 token 和场景参数",
+    },
+    quickScenarios: {
+      "ai-chatbot": {
+        title: "AI 客服",
+        description: "简单对话场景，适合客服机器人、FAQ 等",
+        inputLabels: ["简单对话", "常规对话", "复杂多轮"],
+        outputLabels: ["简短回复", "中等回复", "详细回复"],
+      },
+      "rag-qa": {
+        title: "RAG 问答",
+        description: "检索增强问答，适合知识库问答场景",
+        inputLabels: ["简单问题", "复杂查询", "深度研究"],
+        outputLabels: ["简短回答", "详细解释", "全方位分析"],
+      },
+      "code-assistant": {
+        title: "代码助手",
+        description: "代码分析和生成辅助工具",
+        inputLabels: ["单文件", "多文件", "全代码库"],
+        outputLabels: ["代码片段", "完整函数", "项目级修改"],
+      },
+      "summarizer": {
+        title: "总结工具",
+        description: "文档摘要和内容总结",
+        inputLabels: ["短文 (~1页)", "长文 (~5页)", "超长文 (~20页)"],
+        outputLabels: ["要点总结", "摘要", "详细总结"],
+      },
     },
   },
 };
