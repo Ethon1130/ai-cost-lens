@@ -388,6 +388,8 @@ export default function Home() {
                     ? copy.controls.rateLive.replace("{rate}", exchangeRate.toFixed(4))
                     : copy.controls.rateDemo
                 }
+                fxLiveLabel={copy.controls.fxLive}
+                fxFallbackLabel={copy.controls.fxFallback}
                 onClick={() => setCurrency(currency === "USD" ? "CNY" : "USD")}
               >
                 {currency === "USD" ? <DollarIcon /> : <YuanIcon />}
@@ -719,12 +721,16 @@ function CurrencyToggleButton({
   label,
   rateLabel,
   fxSource,
+  fxLiveLabel,
+  fxFallbackLabel,
   children,
   onClick,
 }: {
   label: string;
   rateLabel: string;
   fxSource: FxSource;
+  fxLiveLabel: string;
+  fxFallbackLabel: string;
   children: ReactNode;
   onClick: () => void;
 }) {
@@ -762,7 +768,7 @@ function CurrencyToggleButton({
               : "text-amber-600 dark:text-amber-400",
           ].join(" ")}
         >
-          {fxSource === "live" ? "live" : "fallback"}
+          {fxSource === "live" ? fxLiveLabel : fxFallbackLabel}
         </div>
       </div>
     </div>

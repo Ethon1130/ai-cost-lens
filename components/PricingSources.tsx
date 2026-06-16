@@ -63,7 +63,7 @@ export function PricingSources({
                   pricingSource === "api" ? "bg-emerald-500" : "bg-amber-500"
                 }`}
               />
-              {pricingSource === "api" ? "Live" : "Local"}
+              {pricingSource === "api" ? copy.liveBadge : copy.localBadge}
             </span>
           </div>
           <ChevronIcon expanded={isExpanded} />
@@ -77,13 +77,13 @@ export function PricingSources({
           <div className="flex flex-wrap items-center gap-2 rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-900/60">
             {pricingUpdatedAt && (
               <span className="text-zinc-600 dark:text-zinc-400">
-                Updated: {pricingUpdatedAt}
+                {copy.updatedLabel}: {pricingUpdatedAt}
               </span>
             )}
 
             {pricingHasCached && (
               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
-                Includes cached input prices
+                {copy.cachedBadge}
               </span>
             )}
 
@@ -118,9 +118,9 @@ export function PricingSources({
                         {m.cachedInputPer1M !== undefined && (
                           <span
                             className="inline-flex items-center rounded bg-blue-100 px-1 py-0.5 text-[10px] text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-                            title="Supports prompt caching"
+                            title={copy.cachedTitle}
                           >
-                            cached
+                            {copy.cachedBadge}
                           </span>
                         )}
                       </div>
@@ -155,7 +155,7 @@ export function PricingSources({
 
           {models.length === 0 && (
             <p className="py-4 text-center text-sm text-zinc-500">
-              No pricing data available. Using local fallback.
+              {copy.emptyState}
             </p>
           )}
         </div>

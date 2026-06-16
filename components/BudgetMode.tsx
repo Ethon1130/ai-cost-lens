@@ -258,7 +258,7 @@ export function BudgetMode({
         <div className="space-y-2">
           {filteredModels.length === 0 ? (
             <p className="rounded-lg border border-dashed border-zinc-300 p-4 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-              {modelFilterCopy.clear}
+              {copy.emptyRanking}
             </p>
           ) : (
             filteredModels.map((item) => {

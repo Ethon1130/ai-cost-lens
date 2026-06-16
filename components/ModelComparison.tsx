@@ -224,7 +224,8 @@ export function ModelComparison({
             {copy.saves}{" "}
             <span className="font-semibold">
               {formatCurrency(costDiffAbs, currency, exchangeRate)} ({formatPercent(costDiffPercent)})
-            </span>{" "}
+            </span>
+            {copy.perMonth && " "}
             {copy.perMonth}.
           </p>
         </div>

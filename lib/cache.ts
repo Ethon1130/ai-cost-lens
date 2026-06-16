@@ -124,32 +124,32 @@ export function getScenarioCachePotential(
       return {
         potential: 0.7,
         suggestedHitRate: 0.6,
-        reason: "固定 system prompt 在每次请求中重复，缓存潜力高。",
+        reason: "固定 system prompt 在每次请求中重复，缓存潜力高",
       };
     case "agent":
       return {
         potential: 0.8,
         suggestedHitRate: 0.7,
-        reason: "工具定义和 agent 指令高度重复，缓存效果显著。",
+        reason: "工具定义和 agent 指令高度重复，缓存效果显著",
       };
     case "rag":
       return {
         potential: 0.4,
         suggestedHitRate: 0.3,
-        reason: "检索片段可能部分重复，实际命中率取决于知识库更新频率。",
+        reason: "检索片段可能部分重复，实际命中率取决于知识库更新频率",
       };
     case "code":
       return {
         potential: 0.2,
         suggestedHitRate: 0.1,
-        reason: "代码上下文通常不重复，缓存收益有限。",
+        reason: "代码上下文通常不重复，缓存收益有限",
       };
     case "summarizer":
     default:
       return {
         potential: 0.1,
         suggestedHitRate: 0.0,
-        reason: "每次输入文档不同，缓存效果几乎为零。",
+        reason: "每次输入文档不同，缓存效果几乎为零",
       };
   }
 }

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AI Cost Lens - AI API cost simulator",
   description:
-    "Tune scenario-specific AI product assumptions and compare monthly API cost across OpenAI, Anthropic, and Google pricing snapshots. No account, no API key.",
+    "Tune scenario-specific AI product assumptions and compare monthly API cost across OpenAI, Anthropic, and Google pricing snapshots, no account, no API key",
 };
 
 export default function RootLayout({

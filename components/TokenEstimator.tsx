@@ -4,19 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { encodingForModel, getEncoding } from "js-tiktoken";
 import { toSafeNumber } from "@/lib/safeNumber";
 
+import type { AppCopy } from "@/lib/i18n";
+
 const MAX_TEXT_CHARS = 20_000;
 
 interface InlineTokenEstimatorProps {
   /** i18n copy for the popover */
-  copy: {
-    placeholder: string;
-    tokenizerLabel: string;
-    tokensLabel: string;
-    approximateNotice: string;
-    applyButton: string;
-    cancelButton: string;
-    hint: string;
-  };
+  copy: AppCopy["tokenEstimator"];
   /** Which field this estimator targets (used in the hint) */
   fieldLabel: string;
   /** Called when user clicks Apply with the estimated token count */
@@ -88,7 +82,7 @@ export function InlineTokenEstimator({
       <button
         ref={buttonRef}
         type="button"
-        aria-label={`Estimate tokens for ${fieldLabel}`}
+        aria-label={copy.applyAriaLabel.replace("{field}", fieldLabel)}
         title={`${copy.applyButton} "${fieldLabel}"`}
         onClick={handleToggle}
         className={[
@@ -128,7 +122,7 @@ export function InlineTokenEstimator({
                 {copy.tokenizerLabel}
               </p>
               <p className="text-xs tabular-nums text-zinc-400 dark:text-zinc-500">
-                GPT-4 tokenizer
+                {copy.tokenizerName}
               </p>
             </div>
 
@@ -168,7 +162,7 @@ export function InlineTokenEstimator({
 
             {/* Character count */}
             <p className="text-xs text-zinc-500 dark:text-zinc-500">
-              {text.length.toLocaleString("en-US")} / {MAX_TEXT_CHARS.toLocaleString("en-US")} chars
+              {text.length.toLocaleString("en-US")} / {MAX_TEXT_CHARS.toLocaleString("en-US")} {copy.charsLabel}
             </p>
 
             {/* Actions */}

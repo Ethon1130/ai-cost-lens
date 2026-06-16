@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { AppCopy } from "@/lib/i18n";
-import { formatCurrency } from "@/lib/calculate";
+import { formatCurrency, pickCheapest } from "@/lib/calculate";
 import { toSafeNumber } from "@/lib/safeNumber";
 import { QUICK_SCENARIOS } from "@/lib/scenarios";
 import type { QuickScenario } from "@/lib/scenarios";
@@ -367,7 +367,9 @@ export function QuickResults({
   }
 
   const sortedBreakdowns = [...filteredBreakdowns].sort((a, b) => a.totalCost - b.totalCost);
-  const cheapest = filteredBreakdowns.find((b) => b.model.model === cheapestId);
+  // Use object identity to pick the cheapest row; comparing on `b.model.model`
+  // (a string) mis-highlights every row whose id is empty / duplicated.
+  const cheapestRef = pickCheapest(filteredBreakdowns);
 
   // Group by provider (simple object, no need for useMemo)
   const groupedByProvider: Record<string, ModelCostBreakdown[]> = {};
@@ -485,7 +487,7 @@ export function QuickResults({
               </div>
               <div className="space-y-1.5">
                 {models.map((bd) => {
-                  const isCheapest = bd.model.model === cheapestId;
+                  const isCheapest = bd === cheapestRef;
                   return (
                     <div
                       key={bd.model.model}
@@ -525,11 +527,13 @@ export function QuickResults({
         </div>
       )}
 
-      {cheapest && (
+      {cheapestRef && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950">
           <p className="text-sm text-amber-800 dark:text-amber-200">
             <span className="font-medium">{copy.recommendation}: </span>
-            {cheapest.model.displayName} {copy.cheapestModel.toLowerCase()}
+            {copy.recommendationLine
+              .replace("{model}", cheapestRef.model.displayName)
+              .replace("{cheapest}", copy.cheapestModel)}
           </p>
         </div>
       )}

@@ -47,7 +47,7 @@ function deriveChatbotTokens(values: ChatbotParams): ScenarioTokenEstimate {
   return {
     avgInputTokens: systemPromptTokens + userMessageTokens + historyTokens,
     avgOutputTokens: answerTokens,
-    note: "Input = system prompt + user message + recent history.",
+    note: "Input = system prompt + user message + recent history",
   };
 }
 
@@ -62,7 +62,7 @@ function deriveRagTokens(values: RagParams): ScenarioTokenEstimate {
     avgInputTokens:
       systemPromptTokens + userQuestionTokens + topK * avgChunkTokens,
     avgOutputTokens: answerTokens,
-    note: "Input = system prompt + user question + topK retrieved chunks.",
+    note: "Input = system prompt + user question + topK retrieved chunks",
   };
 }
 
@@ -77,7 +77,7 @@ function deriveAgentTokens(values: AgentParams): ScenarioTokenEstimate {
   return {
     avgInputTokens: callsPerTask * (systemPromptTokens + toolResultTokens),
     avgOutputTokens: callsPerTask * finalAnswerTokens,
-    note: "Input/output are multiplied by base calls plus retries.",
+    note: "Input/output are multiplied by base calls plus retries",
   };
 }
 
@@ -95,7 +95,7 @@ function deriveCodeAssistantTokens(
   return {
     avgInputTokens: codeContextTokens + userQuestionTokens,
     avgOutputTokens: sessionTurns * perTurnOutputTokens,
-    note: "Input = code context + question; output scales with session turns.",
+    note: "Input = code context + question; output scales with session turns",
   };
 }
 
@@ -111,7 +111,7 @@ function deriveSummarizerTokens(
   return {
     avgInputTokens: documentTokens,
     avgOutputTokens: documentTokens * compressionRatio,
-    note: "Output = document tokens multiplied by compression ratio.",
+    note: "Output = document tokens multiplied by compression ratio",
   };
 }
 

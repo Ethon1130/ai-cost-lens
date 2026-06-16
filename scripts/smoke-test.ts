@@ -7,8 +7,9 @@
  *  - 5 scenarios derive scenario-specific input/output token assumptions
  *  - unit economics and savings comparison stay finite and deterministic
  */
-import { computeCostReport, sanitizeUsage } from "../lib/calculate";
+import { computeCostReport, pickCheapest, sanitizeUsage } from "../lib/calculate";
 import { MODELS } from "../lib/pricing";
+import type { ModelCostBreakdown } from "../lib/pricing";
 import { SCENARIOS } from "../lib/scenarios";
 import { deriveScenarioTokens } from "../lib/scenarioTokens";
 import { toSafeNumber, safeDivide } from "../lib/safeNumber";
@@ -160,6 +161,36 @@ if (agent.params.kind === "agent") {
     agentTokens.avgOutputTokens === calls * agent.params.values.finalAnswerTokens,
   );
 }
+
+console.log("\n== pickCheapest with duplicate / missing ids ==");
+// Same id across rows, plus a row with id = "". String equality on
+// `model.model` would light up every row; pickCheapest returns one object.
+const fakeRows: ModelCostBreakdown[] = [
+  {
+    model: { model: "shared", provider: "OpenAI", displayName: "A", inputPer1M: 0, outputPer1M: 0, sourceUrl: "", checkedDate: "2025-01-01" },
+    monthlyRequests: 100, monthlyInputTokens: 0, monthlyOutputTokens: 0,
+    inputCost: 0, outputCost: 0, totalCost: 0.5,
+    costPerRequest: 0, costPer1KRequests: 0, costPerActiveUserPerMonth: 0,
+  },
+  {
+    model: { model: "shared", provider: "OpenAI", displayName: "B", inputPer1M: 0, outputPer1M: 0, sourceUrl: "", checkedDate: "2025-01-01" },
+    monthlyRequests: 100, monthlyInputTokens: 0, monthlyOutputTokens: 0,
+    inputCost: 0, outputCost: 0, totalCost: 0.1, // <-- the real cheapest
+    costPerRequest: 0, costPer1KRequests: 0, costPerActiveUserPerMonth: 0,
+  },
+  {
+    model: { model: "", provider: "OpenAI", displayName: "C", inputPer1M: 0, outputPer1M: 0, sourceUrl: "", checkedDate: "2025-01-01" },
+    monthlyRequests: 100, monthlyInputTokens: 0, monthlyOutputTokens: 0,
+    inputCost: 0, outputCost: 0, totalCost: 0.3,
+    costPerRequest: 0, costPer1KRequests: 0, costPerActiveUserPerMonth: 0,
+  },
+];
+const picked = pickCheapest(fakeRows);
+check("pickCheapest returns exactly one row", picked !== null);
+check("pickCheapest picks the lowest totalCost", picked !== null && picked.totalCost === 0.1);
+check("pickCheapest picks displayName 'B'", picked !== null && picked.model.displayName === "B");
+const sameIdCount = fakeRows.filter((m) => m === picked).length;
+check("only one row equals the picked object", sameIdCount === 1);
 
 console.log("\n== summary ==");
 console.log(`failures: ${failures}`);

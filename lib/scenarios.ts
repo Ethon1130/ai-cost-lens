@@ -71,7 +71,7 @@ export const SCENARIOS: ScenarioPreset[] = [
     id: "ai-chatbot-mvp",
     title: "AI Chatbot MVP",
     description:
-      "A small chat product with short system prompts and brief replies.",
+      "A small chat product with short system prompts and brief replies",
     params: {
       kind: "chatbot",
       values: {
@@ -94,7 +94,7 @@ export const SCENARIOS: ScenarioPreset[] = [
     id: "rag-knowledge-base",
     title: "RAG Knowledge Base",
     description:
-      "Retrieval-augmented Q&A with medium-length context chunks injected per query.",
+      "Retrieval-augmented Q&A with medium-length context chunks injected per query",
     params: {
       kind: "rag",
       values: {
@@ -118,7 +118,7 @@ export const SCENARIOS: ScenarioPreset[] = [
     id: "code-assistant",
     title: "Code Assistant",
     description:
-      "Long file context plus medium-length code suggestions.",
+      "Long file context plus medium-length code suggestions",
     params: {
       kind: "code",
       values: {
@@ -141,7 +141,7 @@ export const SCENARIOS: ScenarioPreset[] = [
     id: "ai-agent-workflow",
     title: "AI Agent Workflow",
     description:
-      "Multi-step agent loop with planning, tool calls and final answers per user turn.",
+      "Multi-step agent loop with planning, tool calls and final answers per user turn",
     params: {
       kind: "agent",
       values: {
@@ -165,7 +165,7 @@ export const SCENARIOS: ScenarioPreset[] = [
     id: "document-summarizer",
     title: "Document Summarizer",
     description:
-      "Users paste long documents and the model returns a concise summary.",
+      "Users paste long documents and the model returns a concise summary",
     params: {
       kind: "summarizer",
       values: {
@@ -222,7 +222,7 @@ export const QUICK_SCENARIOS: QuickScenario[] = [
   {
     id: "ai-chatbot",
     title: "AI Chatbot",
-    description: "Simple conversational scenarios like customer service bots, FAQ assistants.",
+    description: "Simple conversational scenarios like customer service bots, FAQ assistants",
     inputLengthOptions: [
       { label: "Simple chat", inputTokens: 200, outputTokens: 100 },
       { label: "Normal chat", inputTokens: 500, outputTokens: 200 },
@@ -239,7 +239,7 @@ export const QUICK_SCENARIOS: QuickScenario[] = [
   {
     id: "rag-qa",
     title: "RAG Q&A",
-    description: "Retrieval-augmented Q&A for knowledge base scenarios.",
+    description: "Retrieval-augmented Q&A for knowledge base scenarios",
     inputLengthOptions: [
       { label: "Simple query", inputTokens: 500, outputTokens: 150 },
       { label: "Complex query", inputTokens: 1500, outputTokens: 350 },
@@ -256,7 +256,7 @@ export const QUICK_SCENARIOS: QuickScenario[] = [
   {
     id: "code-assistant",
     title: "Code Assistant",
-    description: "Code analysis and generation assistance tools.",
+    description: "Code analysis and generation assistance tools",
     inputLengthOptions: [
       { label: "Single file", inputTokens: 800, outputTokens: 200 },
       { label: "Multi-file", inputTokens: 2500, outputTokens: 500 },
@@ -273,7 +273,7 @@ export const QUICK_SCENARIOS: QuickScenario[] = [
   {
     id: "summarizer",
     title: "Summarizer",
-    description: "Document summarization and content condensing.",
+    description: "Document summarization and content condensing",
     inputLengthOptions: [
       { label: "Short doc (~1 page)", inputTokens: 1000, outputTokens: 150 },
       { label: "Long doc (~5 pages)", inputTokens: 4000, outputTokens: 400 },

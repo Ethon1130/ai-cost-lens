@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { formatCurrency } from "@/lib/calculate";
+import { formatCurrency, pickCheapest } from "@/lib/calculate";
 import type { CostReport } from "@/lib/calculate";
 import type { Currency } from "@/lib/currency";
 import type { AppCopy } from "@/lib/i18n";
@@ -152,14 +152,13 @@ export function CostTable({
   // Cheapest within the currently visible (filtered) set. When the table is
   // unfiltered this matches the global report.cheapestModelId, so behavior
   // stays identical for users who don't touch the filter.
-  const visibleCheapestId = useMemo(() => {
-    if (filteredModels.length === 0) return report.cheapestModelId;
-    let best = filteredModels[0];
-    for (const m of filteredModels) {
-      if (m.totalCost < best.totalCost) best = m;
-    }
-    return best.model.model;
-  }, [filteredModels, report.cheapestModelId]);
+  //
+  // Compare by object reference (not by `model` string) so models sharing a
+  // missing / duplicate `id` can't all light up at once.
+  const visibleCheapest = useMemo(
+    () => pickCheapest(filteredModels),
+    [filteredModels],
+  );
 
   return (
     <section aria-labelledby="table-heading" className="space-y-3">
@@ -316,12 +315,12 @@ export function CostTable({
             {filteredModels.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                  No models match your filter criteria.
+                  {modelFilterCopy.emptyResults}
                 </td>
               </tr>
             ) : (
               filteredModels.map((b) => {
-                const isCheapest = b.model.model === visibleCheapestId;
+                const isCheapest = b === visibleCheapest;
                 const isSelected = selectedModelIds.includes(b.model.model);
                 const canSelect = isSelected || selectedModelIds.length < 2;
 

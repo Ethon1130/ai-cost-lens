@@ -79,14 +79,14 @@ function renderFields(
               key: "systemPromptTokens",
               ...field("systemPromptTokens", {
                 label: "System prompt tokens",
-                hint: "Persona, guardrails, and product instructions.",
+                hint: "Persona, guardrails, and product instructions",
               }),
             },
             {
               key: "userMessageTokens",
               ...field("userMessageTokens", {
                 label: "User message tokens",
-                hint: "Average user message length.",
+                hint: "Average user message length",
               }),
               estimable: true,
             },
@@ -94,14 +94,14 @@ function renderFields(
               key: "historyTokens",
               ...field("historyTokens", {
                 label: "Recent history tokens",
-                hint: "Conversation context carried into each request.",
+                hint: "Conversation context carried into each request",
               }),
             },
             {
               key: "answerTokens",
               ...field("answerTokens", {
                 label: "Answer tokens",
-                hint: "Average model response length.",
+                hint: "Average model response length",
               }),
               estimable: true,
             },
@@ -124,14 +124,14 @@ function renderFields(
               key: "systemPromptTokens",
               ...field("systemPromptTokens", {
                 label: "System prompt tokens",
-                hint: "Instructions used for every RAG answer.",
+                hint: "Instructions used for every RAG answer",
               }),
             },
             {
               key: "userQuestionTokens",
               ...field("userQuestionTokens", {
                 label: "User question tokens",
-                hint: "Average question length.",
+                hint: "Average question length",
               }),
               estimable: true,
             },
@@ -139,7 +139,7 @@ function renderFields(
               key: "topK",
               ...field("topK", {
                 label: "Retrieved chunks",
-                hint: "How many chunks are injected per request.",
+                hint: "How many chunks are injected per request",
               }),
               integer: true,
               max: 50,
@@ -148,7 +148,7 @@ function renderFields(
               key: "avgChunkTokens",
               ...field("avgChunkTokens", {
                 label: "Avg chunk tokens",
-                hint: "Average token length per retrieved chunk.",
+                hint: "Average token length per retrieved chunk",
               }),
               estimable: true,
             },
@@ -156,7 +156,7 @@ function renderFields(
               key: "answerTokens",
               ...field("answerTokens", {
                 label: "Answer tokens",
-                hint: "Average grounded answer length.",
+                hint: "Average grounded answer length",
               }),
               estimable: true,
             },
@@ -179,7 +179,7 @@ function renderFields(
               key: "baseCalls",
               ...field("baseCalls", {
                 label: "Base calls / task",
-                hint: "Planned model calls before retries.",
+                hint: "Planned model calls before retries",
               }),
               integer: true,
               max: 100,
@@ -188,7 +188,7 @@ function renderFields(
               key: "retries",
               ...field("retries", {
                 label: "Retries / task",
-                hint: "Average extra calls from retries or revisions.",
+                hint: "Average extra calls from retries or revisions",
               }),
               integer: true,
               max: 100,
@@ -197,14 +197,14 @@ function renderFields(
               key: "systemPromptTokens",
               ...field("systemPromptTokens", {
                 label: "System prompt tokens",
-                hint: "Agent instructions included on each call.",
+                hint: "Agent instructions included on each call",
               }),
             },
             {
               key: "toolResultTokens",
               ...field("toolResultTokens", {
                 label: "Tool result tokens",
-                hint: "Average tool output returned to the model.",
+                hint: "Average tool output returned to the model",
               }),
               estimable: true,
             },
@@ -212,7 +212,7 @@ function renderFields(
               key: "finalAnswerTokens",
               ...field("finalAnswerTokens", {
                 label: "Answer tokens / call",
-                hint: "Average output per model call.",
+                hint: "Average output per model call",
               }),
               estimable: true,
             },
@@ -235,7 +235,7 @@ function renderFields(
               key: "codeContextTokens",
               ...field("codeContextTokens", {
                 label: "Code context tokens",
-                hint: "Files, snippets, and diagnostics in context.",
+                hint: "Files, snippets, and diagnostics in context",
               }),
               estimable: true,
             },
@@ -243,7 +243,7 @@ function renderFields(
               key: "userQuestionTokens",
               ...field("userQuestionTokens", {
                 label: "User question tokens",
-                hint: "Average developer prompt length.",
+                hint: "Average developer prompt length",
               }),
               estimable: true,
             },
@@ -251,7 +251,7 @@ function renderFields(
               key: "sessionTurns",
               ...field("sessionTurns", {
                 label: "Session turns",
-                hint: "How many output turns a request usually creates.",
+                hint: "How many output turns a request usually creates",
               }),
               integer: true,
               max: 100,
@@ -260,7 +260,7 @@ function renderFields(
               key: "perTurnOutputTokens",
               ...field("perTurnOutputTokens", {
                 label: "Output tokens / turn",
-                hint: "Average code or explanation generated per turn.",
+                hint: "Average code or explanation generated per turn",
               }),
               estimable: true,
             },
@@ -283,7 +283,7 @@ function renderFields(
               key: "documentTokens",
               ...field("documentTokens", {
                 label: "Document tokens",
-                hint: "Average input document length.",
+                hint: "Average input document length",
               }),
               estimable: true,
             },
@@ -291,7 +291,7 @@ function renderFields(
               key: "compressionRatio",
               ...field("compressionRatio", {
                 label: "Compression ratio",
-                hint: "0.075 means output is about 7.5% of the document.",
+                hint: "0.075 means output is about 7.5% of the document",
               }),
               step: 0.01,
               max: 1,

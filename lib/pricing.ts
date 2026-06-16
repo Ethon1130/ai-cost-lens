@@ -69,7 +69,7 @@ export const MODELS: ModelPrice[] = [
     sourceUrl:
       "https://platform.openai.com/docs/models/gpt-4o-mini",
     checkedDate: "2025-10-15",
-    notes: "OpenAI public API pricing for gpt-4o-mini.",
+    notes: "OpenAI public API pricing for gpt-4o-mini",
   },
   {
     provider: "OpenAI",
@@ -80,7 +80,7 @@ export const MODELS: ModelPrice[] = [
     contextWindow: 128_000,
     sourceUrl: "https://platform.openai.com/docs/models/gpt-4o",
     checkedDate: "2025-10-15",
-    notes: "OpenAI public API pricing for gpt-4o.",
+    notes: "OpenAI public API pricing for gpt-4o",
   },
   {
     provider: "Anthropic",
@@ -91,7 +91,7 @@ export const MODELS: ModelPrice[] = [
     contextWindow: 200_000,
     sourceUrl: "https://www.anthropic.com/pricing",
     checkedDate: "2025-10-15",
-    notes: "Anthropic public API pricing for Claude 3.5 Haiku.",
+    notes: "Anthropic public API pricing for Claude 3.5 Haiku",
   },
   {
     provider: "Anthropic",
@@ -102,7 +102,7 @@ export const MODELS: ModelPrice[] = [
     contextWindow: 200_000,
     sourceUrl: "https://www.anthropic.com/pricing",
     checkedDate: "2025-10-15",
-    notes: "Anthropic public API pricing for Claude 3.5 Sonnet.",
+    notes: "Anthropic public API pricing for Claude 3.5 Sonnet",
   },
   {
     provider: "Google",
@@ -114,7 +114,7 @@ export const MODELS: ModelPrice[] = [
     sourceUrl: "https://ai.google.dev/pricing",
     checkedDate: "2025-10-15",
     notes:
-      "Google AI Studio / Gemini API pricing for Gemini 1.5 Flash (<=128k context tier).",
+      "Google AI Studio / Gemini API pricing for Gemini 1.5 Flash (<=128k context tier)",
   },
   {
     provider: "Google",
@@ -126,7 +126,7 @@ export const MODELS: ModelPrice[] = [
     sourceUrl: "https://ai.google.dev/pricing",
     checkedDate: "2025-10-15",
     notes:
-      "Google AI Studio / Gemini API pricing for Gemini 1.5 Pro (<=128k context tier).",
+      "Google AI Studio / Gemini API pricing for Gemini 1.5 Pro (<=128k context tier)",
   },
 ];
 

@@ -229,8 +229,20 @@ function SchemeCard({
         ? copy.schemeB
         : copy.schemeC;
 
-  const batchSupported = combo.breakdown.batchModelPercent > 0;
-  const showBatchNA = combo.id === "batch" && !batchSupported;
+  const batchAvailable = combo.id === "batch" && combo.availability === "available";
+  const batchUnavailable = combo.id === "batch" && combo.availability !== "available";
+  const batchStatusText = combo.availability === "unsupported"
+    ? copy.schemeC.unsupported
+    : combo.availability === "not-recommended"
+      ? copy.schemeC.notRecommended
+      : null;
+  const caveats = combo.id === "batch"
+    ? combo.availability === "unsupported"
+      ? copy.schemeC.unsupportedCaveats
+      : combo.availability === "not-recommended"
+        ? copy.schemeC.notRecommendedCaveats
+        : copy.schemeC.caveats
+    : schemeCopy.caveats;
 
   const cheapPercent = combo.breakdown.cheapModelPercent;
   const highPercent = combo.breakdown.expensiveModelPercent;
@@ -246,6 +258,7 @@ function SchemeCard({
         "flex flex-col gap-3 rounded-xl border p-4",
         theme.border,
         theme.bg,
+        batchUnavailable ? "opacity-75" : "",
       ].join(" ")}
     >
       <div className="space-y-1">
@@ -253,14 +266,12 @@ function SchemeCard({
           {schemeCopy.name}
         </h3>
         <p className={["text-xs", theme.accent].join(" ")}>
-          {combo.id === "batch" && showBatchNA
-            ? copy.schemeC.unsupported
-            : schemeCopy.tagline}
+          {batchStatusText ?? schemeCopy.tagline}
         </p>
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {combo.suitableScenarios.map((tag) => (
+        {schemeCopy.tags.map((tag) => (
           <span
             key={tag}
             className={[
@@ -283,8 +294,8 @@ function SchemeCard({
             theme.heading,
           ].join(" ")}
         >
-          {combo.id === "batch" && showBatchNA
-            ? "N/A"
+          {batchUnavailable
+            ? copy.batchUnavailableCost
             : formatCurrency(combo.monthlyCost, currency, exchangeRate)}
         </div>
         <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-zinc-600 dark:text-zinc-400">
@@ -298,12 +309,20 @@ function SchemeCard({
               {highPercent}% {copy.highShare}
             </span>
           ) : null}
-          {batchPercent > 0 ? <span>{batchPercent}% Batch</span> : null}
+          {batchPercent > 0 ? (
+            <span>
+              {batchPercent}% {copy.batchShare}
+            </span>
+          ) : null}
         </div>
       </div>
 
       <div className="rounded-lg bg-white/70 px-3 py-2 text-xs dark:bg-black/20">
-        {noSavings ? (
+        {batchUnavailable ? (
+          <span className={["font-medium", theme.accent].join(" ")}>
+            {copy.batchSavingsUnavailable}
+          </span>
+        ) : noSavings ? (
           <span className={["font-medium", theme.accent].join(" ")}>
             {copy.savingsNone}
           </span>
@@ -316,14 +335,11 @@ function SchemeCard({
         )}
       </div>
 
-      {combo.id === "batch" && batchSupported ? (
+      {batchAvailable ? (
         <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
           {copy.latencyNote.replace(
             "{note}",
-            // We don't have direct provider access here, so we fall back to
-            // the generic async latency message; provider-specific notes are
-            // carried inside the Scheme C description in lib/combo.ts.
-            "up to 24 hours (async)",
+            copy.batchLatencyValue,
           )}
         </p>
       ) : null}
@@ -338,7 +354,7 @@ function SchemeCard({
           {copy.caveatsHeading}
         </div>
         <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-zinc-700 dark:text-zinc-300">
-          {combo.caveats.map((line) => (
+          {caveats.map((line) => (
             <li key={line}>{line}</li>
           ))}
         </ul>

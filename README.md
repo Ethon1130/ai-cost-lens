@@ -1,38 +1,38 @@
 # AI Cost Lens
 
-AI Cost Lens is an AI API cost simulator for early-stage AI products. It helps
+AI Cost Lens is an AI API cost simulator for early-stage AI products, it helps
 developers estimate how much a planned AI feature might cost per month before
-shipping it.
+shipping it
 
 The project is intentionally small and dependency-light: no account, no API key,
-no server-side model calls, and no external pricing API.
+no server-side model calls, and no external pricing API
 
 ## Live demo
 
 Deployed on Vercel: <https://ai-cost-lens.vercel.app> (placeholder; replace
-with the real URL after deployment).
+with the real URL after deployment)
 
 ## What it does
 
 - Starts from common product scenarios: AI Chatbot MVP, RAG Knowledge Base, Code
-  Assistant, AI Agent Workflow, and Document Summarizer.
+  Assistant, AI Agent Workflow, and Document Summarizer
 - Lets you tune scenario-specific token assumptions such as RAG `topK`, chunk
   size, Agent calls per task, code context length, and summarizer compression
-  ratio.
+  ratio
 - Includes a local GPT tokenizer text estimator so you can paste real prompts,
   code, documents, or tool results before applying the count to the active
-  scenario.
+  scenario
 - Computes monthly requests, monthly input tokens, monthly output tokens, input
-  cost, output cost, and total monthly cost.
-- Compares models across OpenAI, Anthropic, and Google using live pricing data from the llm-prices open-source project.
-- Highlights the cheapest model for the current assumptions.
+  cost, output cost, and total monthly cost
+- Compares models across OpenAI, Anthropic, and Google using live pricing data from the llm-prices open-source project
+- Highlights the cheapest model for the current assumptions
 - Shows unit economics: monthly cost, cost per request, cost per 1K requests,
-  and optional cost per active user per month.
+  and optional cost per active user per month
 - Shows estimated savings when switching from the highest-cost model in the
-  snapshot to the cheapest model.
+  snapshot to the cheapest model
 - Includes Budget Mode, which reverses the question and estimates how many
-  requests each model can support under a fixed monthly AI budget.
-- Lists official pricing source URLs and checked dates.
+  requests each model can support under a fixed monthly AI budget
+- Lists official pricing source URLs and checked dates
 
 ## Features
 
@@ -65,14 +65,14 @@ with the real URL after deployment).
 
 ## How to run locally
 
-Requires Node.js 20 or newer.
+Requires Node.js 20 or newer
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open <http://localhost:3000>.
+Open <http://localhost:3000>
 
 Useful checks:
 
@@ -82,43 +82,43 @@ npx tsc --noEmit
 npm run build
 ```
 
-No environment variables are required.
+No environment variables are required
 
 ## Pricing data policy
 
-- Pricing data is fetched live from [simonw/llm-prices](https://github.com/simonw/llm-prices) open-source project.
+- Pricing data is fetched live from [simonw/llm-prices](https://github.com/simonw/llm-prices) open-source project
 - Every model includes provider, model name, input price per 1M tokens, output
-  price per 1M tokens, official source URL, checked date, and notes.
-- A static fallback is used when the API is unavailable.
-- Prices may change over time.
+  price per 1M tokens, official source URL, checked date, and notes
+- A static fallback is used when the API is unavailable
+- Prices may change over time
 - Always verify the latest price on the linked official provider page before
-  making a real product or budget decision.
+  making a real product or budget decision
 
 ## Known limitations
 
-- This is an estimator / cost simulator, not a billing dashboard.
-- Pricing data is fetched live from the llm-prices open-source project and may change over time.
-- This project does not call real AI model APIs.
-- No API key is required for the core calculator.
+- This is an estimator / cost simulator, not a billing dashboard
+- Pricing data is fetched live from the llm-prices open-source project and may change over time
+- This project does not call real AI model APIs
+- No API key is required for the core calculator
 - The calculator does not include taxes, free tiers, enterprise discounts,
-  regional pricing, latency, model quality, reliability, or rate limits.
+  regional pricing, latency, model quality, reliability, or rate limits
 - Token usage varies by tokenizer, language, provider, prompt style, and product
-  behavior.
-- The text token estimator uses an OpenAI/GPT tokenizer in the browser. Claude,
-  Gemini, and other providers may count the same text differently.
+  behavior
+- The text token estimator uses an OpenAI/GPT tokenizer in the browser, Claude,
+  Gemini, and other providers may count the same text differently
 - Scenario-specific parameters such as RAG `topK`, Agent calls per task, code
   context size, and summarizer compression ratio are educated defaults, not
-  measurements of your real product.
-- Cache hit rate is not included in the current version.
+  measurements of your real product
+- Cache hit rate is not included in the current version
 - Unit economics are computed from user-input assumptions and do not reflect
-  real revenue or billing data.
+  real revenue or billing data
 - Third-party pricing aggregators, if added later, should only be optional
-  references and must be clearly labeled.
+  references and must be clearly labeled
 
 ## No API key required
 
-The core calculator runs entirely in the browser. It does not call OpenAI,
-Anthropic, Google, OpenRouter, LiteLLM, or any other model or pricing API.
+The core calculator runs entirely in the browser, it does not call OpenAI,
+Anthropic, Google, OpenRouter, LiteLLM, or any other model or pricing API
 
 ## Future work
 
@@ -167,4 +167,4 @@ scripts/
 
 ## License
 
-MIT.
+MIT

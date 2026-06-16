@@ -100,6 +100,36 @@ export function computeMonthlyRequests(usage: UsageInput): number {
   return requestsPerDay * daysPerMonth;
 }
 
+/**
+ * Pick the breakdown with the lowest positive total cost, or `null` when every
+ * row is non-positive. Returns the *object reference* — callers that need to
+ * highlight "the cheapest row" should compare with `===`, never on
+ * `breakdown.model.model` (a string), because duplicate / missing model ids
+ * would otherwise light up more than one row.
+ */
+export function pickCheapest(
+  breakdowns: ModelCostBreakdown[],
+): ModelCostBreakdown | null {
+  let best: ModelCostBreakdown | null = null;
+  for (const b of breakdowns) {
+    if (b.totalCost <= 0) continue;
+    if (best === null || b.totalCost < best.totalCost) best = b;
+  }
+  return best;
+}
+
+/** Pick the breakdown with the highest total cost, or `null` when empty. */
+export function pickMostExpensive(
+  breakdowns: ModelCostBreakdown[],
+): ModelCostBreakdown | null {
+  let best: ModelCostBreakdown | null = null;
+  for (const b of breakdowns) {
+    if (b.totalCost <= 0) continue;
+    if (best === null || b.totalCost > best.totalCost) best = b;
+  }
+  return best;
+}
+
 function computeForModel(
   model: ModelPrice,
   usage: UsageInput,
@@ -152,17 +182,8 @@ export function computeCostReport(
     computeForModel(m, usage, monthlyRequests),
   );
 
-  let cheapest: ModelCostBreakdown | null = null;
-  let mostExpensive: ModelCostBreakdown | null = null;
-  for (const b of breakdowns) {
-    if (b.totalCost <= 0) continue;
-    if (cheapest === null || b.totalCost < cheapest.totalCost) {
-      cheapest = b;
-    }
-    if (mostExpensive === null || b.totalCost > mostExpensive.totalCost) {
-      mostExpensive = b;
-    }
-  }
+  const cheapest = pickCheapest(breakdowns);
+  const mostExpensive = pickMostExpensive(breakdowns);
 
   const savingsAmount =
     cheapest && mostExpensive

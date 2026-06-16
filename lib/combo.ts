@@ -31,17 +31,18 @@ import { computeMonthlyRequests } from "./calculate";
 import { toSafeNumber, safeDivide } from "./safeNumber";
 import { applyBatchDiscount, getBatchDiscount } from "./batch";
 import type { UsageInput } from "./calculate";
+import { isScenarioBatchFriendly } from "./scenarios";
 
 export type ComboId = "all-high" | "router" | "batch";
+export type ComboAvailability = "available" | "unsupported" | "not-recommended";
 
 export interface ModelCombo {
   id: ComboId;
   name: string;
   description: string;
-  suitableScenarios: string[];
+  availability: ComboAvailability;
   monthlyCost: number;
   savingsVsAllExpensive: { amount: number; percent: number };
-  caveats: string[];
   breakdown: {
     cheapModelPercent: number;
     expensiveModelPercent: number;
@@ -56,7 +57,7 @@ export interface ComboInput {
   anchorModelId?: string | null;
   /** Share of traffic routed to the cheapest model in scheme B. 0–1. */
   cheapRatio?: number;
-  /** Optional scenario id to drive suitableScenarios tags. */
+  /** Optional scenario id to decide whether Batch is a reasonable option. */
   scenarioId?: string | null;
 }
 
@@ -130,44 +131,6 @@ function savingsVs(anchorTotal: number, comboTotal: number) {
   return { amount, percent };
 }
 
-function suitableScenariosFor(scheme: ComboId): string[] {
-  switch (scheme) {
-    case "all-high":
-      return ["Production", "Customer support", "Complex Q&A"];
-    case "router":
-      return ["FAQ bots", "Routing", "Classification", "Mixed complexity"];
-    case "batch":
-      return ["Offline reports", "Bulk analysis", "Document summarization"];
-  }
-}
-
-function caveatsFor(
-  scheme: ComboId,
-  batchSupported: boolean,
-): string[] {
-  if (scheme === "all-high") {
-    return [
-      "Same model for every request. Highest quality, highest cost.",
-      "No fallback to a cheaper model — every request pays the full rate.",
-    ];
-  }
-  if (scheme === "router") {
-    return [
-      "Quality depends on the router's complexity classifier.",
-      "The cheap-model share is a user-tunable estimate, not a measurement of your real traffic.",
-    ];
-  }
-  // batch
-  const caveats: string[] = [
-    "Up to 24h latency — only suitable for offline / async tasks.",
-    "Real-time chat or interactive assistants will break the user experience.",
-  ];
-  if (!batchSupported) {
-    caveats.push("This provider does not publish batch pricing in the current snapshot.");
-  }
-  return caveats;
-}
-
 /**
  * 基于当前 pricing 快照和 usage，生成三个方案推荐。
  * 永远不会返回包含 NaN / Infinity 的数字；models 为空时返回空数组。
@@ -189,10 +152,9 @@ export function generateCombos(input: ComboInput): ModelCombo[] {
     id: "all-high",
     name: "All-high: single model",
     description: `Every request goes to ${anchor.displayName}.`,
-    suitableScenarios: suitableScenariosFor("all-high"),
+    availability: "available",
     monthlyCost: anchorCost,
     savingsVsAllExpensive: savingsVs(anchorCost, anchorCost),
-    caveats: caveatsFor("all-high", true),
     breakdown: {
       cheapModelPercent: 0,
       expensiveModelPercent: 100,
@@ -215,10 +177,9 @@ export function generateCombos(input: ComboInput): ModelCombo[] {
     description: cheapest && cheapest.model !== anchor.model
       ? `${Math.round(ratio * 100)}% of traffic → ${cheapest.displayName}; the rest escalates to ${anchor.displayName}.`
       : `Anchor and cheapest resolve to the same model. Router gives no savings.`,
-    suitableScenarios: suitableScenariosFor("router"),
+    availability: "available",
     monthlyCost: routerCost,
     savingsVsAllExpensive: savingsVs(anchorCost, routerCost),
-    caveats: caveatsFor("router", true),
     breakdown: {
       cheapModelPercent: Math.round(ratio * 100),
       expensiveModelPercent: Math.round((1 - ratio) * 100),
@@ -228,8 +189,14 @@ export function generateCombos(input: ComboInput): ModelCombo[] {
 
   // Scheme C: batch
   const batchConfig = getBatchDiscount(anchor.provider);
+  const batchFriendly = isScenarioBatchFriendly(scenarioId);
+  const batchAvailability: ComboAvailability = !batchConfig
+    ? "unsupported"
+    : batchFriendly
+      ? "available"
+      : "not-recommended";
   let batchCost: number | null = null;
-  if (batchConfig) {
+  if (batchAvailability === "available") {
     const { inputPer1M, outputPer1M } = applyBatchDiscount(
       anchor.inputPer1M,
       anchor.outputPer1M,
@@ -242,27 +209,28 @@ export function generateCombos(input: ComboInput): ModelCombo[] {
     };
     batchCost = costForModel(batchModel, usage).totalCost;
   }
-  // Use 0 (not NaN) when batch isn't supported; UI shows "N/A" via the
-  // batchConfig === null check below. Keeping 0 here keeps the savings math
-  // finite and safe; the component decides whether to surface the N/A label.
+  // Use 0 (not NaN) when batch should not be presented as an actionable
+  // option. The UI uses availability to avoid showing misleading savings.
   const schemeCMonthly = batchCost ?? 0;
   const schemeC: ModelCombo = {
     id: "batch",
     name: "Batch: 50% off, async only",
-    description: batchConfig
+    description: batchAvailability === "available"
       ? `${anchor.displayName} via ${anchor.provider} Batch API (50% off input & output, up to 24h latency).`
-      : `${anchor.provider} does not publish batch pricing in the current snapshot.`,
-    suitableScenarios: suitableScenariosFor("batch"),
+      : batchAvailability === "unsupported"
+        ? `${anchor.provider} does not publish batch pricing in the current snapshot.`
+        : "Batch is not recommended for the current real-time scenario",
+    availability: batchAvailability,
     monthlyCost: schemeCMonthly,
-    savingsVsAllExpensive: savingsVs(anchorCost, schemeCMonthly),
-    caveats: caveatsFor("batch", Boolean(batchConfig)),
+    savingsVsAllExpensive: batchAvailability === "available"
+      ? savingsVs(anchorCost, schemeCMonthly)
+      : savingsVs(anchorCost, anchorCost),
     breakdown: {
       cheapModelPercent: 0,
       expensiveModelPercent: 0,
-      batchModelPercent: batchConfig ? 100 : 0,
+      batchModelPercent: batchAvailability === "available" ? 100 : 0,
     },
   };
 
-  void scenarioId; // Reserved for future per-scenario caveat overrides.
   return [schemeA, schemeB, schemeC];
 }
