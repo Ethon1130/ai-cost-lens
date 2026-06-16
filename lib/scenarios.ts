@@ -53,6 +53,11 @@ export type ScenarioParams =
  * Pre-built usage presets aimed at indie devs / programmers evaluating an AI
  * project. Each preset is intentionally opinionated; users can tweak afterwards.
  */
+// TODO(P0): 新增场景 preset「批量翻译」：适合 batch 模式，输入长文档 + 输出短摘要，batch mode 下成本可降 50%。
+// TODO(P0): 新增场景 preset「图片生成」：对应 Replicate / fal.ai 非 token 计费模型，计费单位是「张/次」，
+//   不走 token 计费逻辑，需在 pricing.ts 新增 RuntimeBillingModel 接口。
+// TODO(P0): 新增两个场景 preset：「批量翻译 / 视频生成」，对应 batch 场景 + 多模态计费。
+//   批量翻译适合 batch mode，视频生成对应 Replicate/fal.ai 非 token 计费模型。
 export interface ScenarioPreset {
   id: string;
   title: string;
@@ -79,9 +84,10 @@ export const SCENARIOS: ScenarioPreset[] = [
     usage: {
       requestsPerDay: 800,
       daysPerMonth: 30,
-      activeUsers: 200,
+      activeUsers: 0,
       avgInputTokens: 380,
       avgOutputTokens: 300,
+      retryRate: 0,
     },
   },
   {
@@ -105,6 +111,7 @@ export const SCENARIOS: ScenarioPreset[] = [
       activeUsers: 300,
       avgInputTokens: 1500,
       avgOutputTokens: 400,
+      retryRate: 0,
     },
   },
   {
@@ -127,6 +134,7 @@ export const SCENARIOS: ScenarioPreset[] = [
       activeUsers: 150,
       avgInputTokens: 2000,
       avgOutputTokens: 800,
+      retryRate: 0,
     },
   },
   {
@@ -150,6 +158,7 @@ export const SCENARIOS: ScenarioPreset[] = [
       activeUsers: 100,
       avgInputTokens: 3200,
       avgOutputTokens: 2000,
+      retryRate: 0.1,
     },
   },
   {
@@ -170,9 +179,132 @@ export const SCENARIOS: ScenarioPreset[] = [
       activeUsers: 250,
       avgInputTokens: 4000,
       avgOutputTokens: 300,
+      retryRate: 0,
     },
   },
 ];
+
+// =============================================================================
+// Quick Estimation Mode Types (new)
+// 场景专属的「长度档位」描述 + token 映射，适合不懂 token 的普通开发者
+// =============================================================================
+
+export interface QuickLengthOption {
+  /** 用户看到的显示文案，如「简单对话」「深度研究」 */
+  label: string;
+  /** 映射到具体 input token 数（outputLengthOptions 中不需要） */
+  inputTokens?: number;
+  /** 映射到具体 output token 数 */
+  outputTokens: number;
+}
+
+export interface QuickScenario {
+  id: string;
+  /** 用户看到的场景名 */
+  title: string;
+  /** 场景描述 */
+  description: string;
+  /** Input 长度档位选项 */
+  inputLengthOptions: QuickLengthOption[];
+  /** Output 长度档位选项 */
+  outputLengthOptions: QuickLengthOption[];
+  /** 默认选中的 input 档位 index */
+  defaultInputIndex: number;
+  /** 默认选中的 output 档位 index */
+  defaultOutputIndex: number;
+}
+
+/**
+ * 快速估算模式的场景配置
+ * 各场景的档位设计采用场景专属描述，而非统一「短/中/长」
+ */
+export const QUICK_SCENARIOS: QuickScenario[] = [
+  {
+    id: "ai-chatbot",
+    title: "AI 客服",
+    description: "简单对话场景，适合客服机器人、FAQ 等",
+    inputLengthOptions: [
+      { label: "简单对话", inputTokens: 200, outputTokens: 100 },
+      { label: "常规对话", inputTokens: 500, outputTokens: 200 },
+      { label: "复杂多轮", inputTokens: 1200, outputTokens: 400 },
+    ],
+    outputLengthOptions: [
+      { label: "简短回复", outputTokens: 100 },
+      { label: "中等回复", outputTokens: 250 },
+      { label: "详细回复", outputTokens: 500 },
+    ],
+    defaultInputIndex: 1,
+    defaultOutputIndex: 1,
+  },
+  {
+    id: "rag-qa",
+    title: "RAG 问答",
+    description: "检索增强问答，适合知识库问答场景",
+    inputLengthOptions: [
+      { label: "简单问题", inputTokens: 500, outputTokens: 150 },
+      { label: "复杂查询", inputTokens: 1500, outputTokens: 350 },
+      { label: "深度研究", inputTokens: 3000, outputTokens: 600 },
+    ],
+    outputLengthOptions: [
+      { label: "简短回答", outputTokens: 150 },
+      { label: "详细解释", outputTokens: 400 },
+      { label: "全方位分析", outputTokens: 800 },
+    ],
+    defaultInputIndex: 1,
+    defaultOutputIndex: 1,
+  },
+  {
+    id: "code-assistant",
+    title: "代码助手",
+    description: "代码分析和生成辅助工具",
+    inputLengthOptions: [
+      { label: "单文件", inputTokens: 800, outputTokens: 200 },
+      { label: "多文件", inputTokens: 2500, outputTokens: 500 },
+      { label: "全代码库", inputTokens: 5000, outputTokens: 1000 },
+    ],
+    outputLengthOptions: [
+      { label: "代码片段", outputTokens: 200 },
+      { label: "完整函数", outputTokens: 500 },
+      { label: "项目级修改", outputTokens: 1200 },
+    ],
+    defaultInputIndex: 1,
+    defaultOutputIndex: 1,
+  },
+  {
+    id: "summarizer",
+    title: "总结工具",
+    description: "文档摘要和内容总结",
+    inputLengthOptions: [
+      { label: "短文 (~1页)", inputTokens: 1000, outputTokens: 150 },
+      { label: "长文 (~5页)", inputTokens: 4000, outputTokens: 400 },
+      { label: "超长文 (~20页)", inputTokens: 10000, outputTokens: 800 },
+    ],
+    outputLengthOptions: [
+      { label: "要点总结", outputTokens: 150 },
+      { label: "摘要", outputTokens: 400 },
+      { label: "详细总结", outputTokens: 800 },
+    ],
+    defaultInputIndex: 1,
+    defaultOutputIndex: 1,
+  },
+];
+
+export function getQuickScenarioById(id: string): QuickScenario | undefined {
+  return QUICK_SCENARIOS.find((s) => s.id === id);
+}
+
+export function getQuickScenarioTokens(
+  scenario: QuickScenario,
+  inputIndex: number,
+  outputIndex: number,
+): { avgInputTokens: number; avgOutputTokens: number } {
+  const inputOption = scenario.inputLengthOptions[inputIndex] ?? scenario.inputLengthOptions[0];
+  const outputOption = scenario.outputLengthOptions[outputIndex] ?? scenario.outputLengthOptions[0];
+  return {
+    avgInputTokens: inputOption?.inputTokens ?? 0,
+    avgOutputTokens: outputOption?.outputTokens ?? 0,
+  };
+}
 
 export function getScenarioById(id: string): ScenarioPreset | undefined {
   return SCENARIOS.find((s) => s.id === id);

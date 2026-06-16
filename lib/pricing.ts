@@ -9,9 +9,22 @@
  *     source; they may only appear as optional references in future work.
  *
  * Prices are USD per 1,000,000 tokens (i.e. per 1M).
+ *
+ * P1+: For live pricing data, use getLlmPricesData() from llmPricesApi.ts
+ * which fetches from simonw/llm-prices API.
  */
 
-export type Provider = "OpenAI" | "Anthropic" | "Google";
+export type Provider =
+  | "OpenAI"
+  | "Anthropic"
+  | "Google"
+  | "DeepSeek"
+  | "Moonshot"
+  | "xAI"
+  | "Qwen"
+  | "Mistral"
+  | "Amazon"
+  | "Minimax";
 
 export interface ModelPrice {
   /** Provider display name, e.g. "OpenAI". */
@@ -25,13 +38,25 @@ export interface ModelPrice {
   /** USD per 1,000,000 output tokens. */
   outputPer1M: number;
   /** Maximum context window in tokens (informational only). */
-  contextWindow: number;
+  contextWindow?: number;
   /** Official pricing page URL. */
   sourceUrl: string;
   /** Date this price was last verified, ISO yyyy-mm-dd. */
   checkedDate: string;
   /** Optional short note about tier, region, or pricing caveats. */
   notes?: string;
+
+  /**
+   * USD per 1,000,000 tokens for cached input (prompt caching).
+   * Only available for providers that support prompt caching:
+   * - OpenAI: cached input ≈ 10% of regular input
+   * - Google Gemini: cached input ≈ 50% of regular input
+   * - Anthropic: cache read is priced separately
+   * - DeepSeek, Kimi (Moonshot): cached input available
+   *
+   * null or undefined means caching not supported or not available.
+   */
+  cachedInputPer1M?: number;
 }
 
 export const MODELS: ModelPrice[] = [
@@ -119,19 +144,29 @@ export interface ModelCostBreakdown {
   costPerActiveUserPerMonth: number;
 }
 
+// =============================================================================
+// Helper functions
+// =============================================================================
+
+/**
+ * Get all token-based models grouped by provider.
+ *
+ * Note: For live pricing data, use getLlmPricesData() from llmPricesApi.ts.
+ */
 export function getModelsByProvider(): Record<Provider, ModelPrice[]> {
-  const grouped: Record<Provider, ModelPrice[]> = {
-    OpenAI: [],
-    Anthropic: [],
-    Google: [],
-  };
-  for (const m of MODELS) grouped[m.provider].push(m);
-  return grouped;
+  const grouped: Partial<Record<Provider, ModelPrice[]>> = {};
+
+  for (const m of MODELS) {
+    if (!grouped[m.provider]) {
+      grouped[m.provider] = [];
+    }
+    grouped[m.provider]!.push(m);
+  }
+
+  return grouped as Record<Provider, ModelPrice[]>;
 }
 
 export function getLatestCheckedDate(models: ModelPrice[] = MODELS): string {
-  return models
-    .map((m) => m.checkedDate)
-    .sort()
-    .reverse()[0];
+  if (models.length === 0) return "N/A";
+  return [...models.map((m) => m.checkedDate)].sort().reverse()[0]!;
 }

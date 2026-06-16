@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { UsageInput } from "@/lib/calculate";
 import type { AppCopy } from "@/lib/i18n";
 import { toSafeNumber } from "@/lib/safeNumber";
+import { RetryRateSlider } from "./RetryRateSlider";
 
 interface UsageFormProps {
   usage: UsageInput;
@@ -63,6 +65,8 @@ function NumberField({
 }
 
 export function UsageForm({ usage, copy, onChange }: UsageFormProps) {
+  const [showActiveUsers, setShowActiveUsers] = useState(false);
+
   return (
     <section aria-labelledby="usage-heading" className="space-y-3">
       <div>
@@ -93,14 +97,39 @@ export function UsageForm({ usage, copy, onChange }: UsageFormProps) {
           integer
           onChange={(v) => onChange({ ...usage, daysPerMonth: v })}
         />
-        <NumberField
-          id="activeUsers"
-          label={copy.activeUsers}
-          hint={copy.activeUsersHint}
-          value={usage.activeUsers}
-          onChange={(v) => onChange({ ...usage, activeUsers: v })}
-        />
       </div>
+      <RetryRateSlider
+        value={usage.retryRate}
+        onChange={(v) => onChange({ ...usage, retryRate: v })}
+        copy={{ label: copy.retryRate, hint: copy.retryRateHint }}
+      />
+      {/* Active Users Toggle */}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="toggle-active-users"
+          checked={showActiveUsers}
+          onChange={(e) => setShowActiveUsers(e.target.checked)}
+          className="h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-blue-400 dark:focus:ring-blue-400 cursor-pointer"
+        />
+        <label
+          htmlFor="toggle-active-users"
+          className="text-sm text-zinc-600 dark:text-zinc-400 cursor-pointer"
+        >
+          {copy.activeUsers}
+        </label>
+      </div>
+      {showActiveUsers && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <NumberField
+            id="activeUsers"
+            label={copy.activeUsers}
+            hint={copy.activeUsersHint}
+            value={usage.activeUsers}
+            onChange={(v) => onChange({ ...usage, activeUsers: v })}
+          />
+        </div>
+      )}
     </section>
   );
 }

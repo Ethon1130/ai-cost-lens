@@ -1,20 +1,31 @@
 import {
   formatRequests,
   formatTokens,
-  formatUsd,
+  formatCurrency,
 } from "@/lib/calculate";
 import type { CostReport } from "@/lib/calculate";
+import type { Currency } from "@/lib/currency";
 import type { AppCopy } from "@/lib/i18n";
-import { MODELS } from "@/lib/pricing";
+import type { ModelPrice } from "@/lib/pricing";
+
+// TODO(P0): CostSummary 增加「成本构成概览」—— 在 Unit Economics 卡片下方新增一行小卡片：
+//   inputCost / outputCost / cachedInputCost / retryCost / fxImpact 各占多少。
+//   用色块进度条可视化各部分占比（例如 output 占 72% 时显示红色提示）。
+// TODO(P0): CostSummary 增加「成本优化建议入口 banner」，在表格底部添加一行：
+//   "输出 token 占总成本 72%，建议限制 max_tokens / 考虑更短摘要策略"（来自 lib/recommendations.ts）。
+// TODO(P1): CostSummary 增加「实时 vs 批处理」对比行，显示 batch 模式成本和节省 %。
 
 interface CostSummaryProps {
   report: CostReport;
   copy: AppCopy["summary"];
+  currency: Currency;
+  exchangeRate: number;
+  models: ModelPrice[];
 }
 
-export function CostSummary({ report, copy }: CostSummaryProps) {
+export function CostSummary({ report, copy, currency, exchangeRate, models }: CostSummaryProps) {
   const cheapest = report.cheapestModelId
-    ? MODELS.find((m) => m.model === report.cheapestModelId)
+    ? models.find((m) => m.model === report.cheapestModelId)
     : null;
   const cheapestBreakdown = report.models.find(
     (b) => b.model.model === report.cheapestModelId,
@@ -50,19 +61,19 @@ export function CostSummary({ report, copy }: CostSummaryProps) {
       <dl className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
         <Metric
           label={copy.monthlyCost}
-          value={formatUsd(report.cheapestTotalCost)}
+          value={formatCurrency(report.cheapestTotalCost, currency, exchangeRate)}
         />
         <Metric
           label={copy.costPerRequest}
-          value={formatUsd(cheapestBreakdown?.costPerRequest ?? 0)}
+          value={formatCurrency(cheapestBreakdown?.costPerRequest ?? 0, currency, exchangeRate)}
         />
         <Metric
           label={copy.costPer1KRequests}
-          value={formatUsd(cheapestBreakdown?.costPer1KRequests ?? 0)}
+          value={formatCurrency(cheapestBreakdown?.costPer1KRequests ?? 0, currency, exchangeRate)}
         />
         <Metric
           label={copy.costPerUserPerMonth}
-          value={formatUsd(cheapestBreakdown?.costPerActiveUserPerMonth ?? 0)}
+          value={formatCurrency(cheapestBreakdown?.costPerActiveUserPerMonth ?? 0, currency, exchangeRate)}
         />
       </dl>
       <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">

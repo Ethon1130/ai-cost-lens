@@ -1,13 +1,25 @@
-import { safeDivide, toSafeNumber } from "./safeNumber";
+import { clamp01, safeDivide, toSafeNumber } from "./safeNumber";
 import type { ModelCostBreakdown, ModelPrice } from "./pricing";
+import { formatCurrency, FIXED_FALLBACK_RATE } from "./currency";
+import type { Currency } from "./currency";
 
-/** Core usage assumptions, all already passed through toSafeNumber. */
+export { formatCurrency };
+export type { Currency };
+/** Demo-only fixed FX rate; see lib/currency.ts. */
+export const FALLBACK_FX_RATE = FIXED_FALLBACK_RATE;
+
+/**
+ * Core usage assumptions, all already passed through toSafeNumber.
+ */
+// TODO(P1): UsageInput 的 retryRate 已通过 clamp01 实现。
+//   totalCost 乘数修正已写入 computeForModel。
 export interface UsageInput {
   requestsPerDay: number;
   daysPerMonth: number;
   activeUsers: number;
   avgInputTokens: number;
   avgOutputTokens: number;
+  retryRate: number;
 }
 
 export interface CostReport {
@@ -29,6 +41,29 @@ export interface CostReport {
   };
 }
 
+export interface BudgetModelBreakdown {
+  model: ModelPrice;
+  monthlyBudget: number;
+  avgInputTokens: number;
+  avgOutputTokens: number;
+  inputCostPerRequest: number;
+  outputCostPerRequest: number;
+  costPerRequest: number;
+  costPer1KRequests: number;
+  maxRequests: number;
+  estimatedSpend: number;
+  unusedBudget: number;
+}
+
+export interface BudgetReport {
+  monthlyBudget: number;
+  avgInputTokens: number;
+  avgOutputTokens: number;
+  models: BudgetModelBreakdown[];
+  bestValueModelId: string | null;
+  bestValueRequests: number;
+}
+
 /**
  * Sanitize raw form / URL values into a non-negative UsageInput.
  * Every field goes through `toSafeNumber` so the calculator never sees bad data.
@@ -39,6 +74,7 @@ export function sanitizeUsage(input: {
   activeUsers: unknown;
   avgInputTokens: unknown;
   avgOutputTokens: unknown;
+  retryRate?: unknown;
 }): UsageInput {
   return {
     requestsPerDay: toSafeNumber(input.requestsPerDay, 0),
@@ -50,6 +86,7 @@ export function sanitizeUsage(input: {
     activeUsers: toSafeNumber(input.activeUsers, 0),
     avgInputTokens: toSafeNumber(input.avgInputTokens, 0),
     avgOutputTokens: toSafeNumber(input.avgOutputTokens, 0),
+    retryRate: clamp01(input.retryRate, 0),
   };
 }
 
@@ -71,10 +108,11 @@ function computeForModel(
   const monthlyInputTokens = monthlyRequests * usage.avgInputTokens;
   const monthlyOutputTokens = monthlyRequests * usage.avgOutputTokens;
   const inputCost =
-    (monthlyInputTokens / 1_000_000) * model.inputPer1M;
+    (monthlyInputTokens / 1_000_000) * (model.inputPer1M ?? 0);
   const outputCost =
-    (monthlyOutputTokens / 1_000_000) * model.outputPer1M;
-  const totalCost = inputCost + outputCost;
+    (monthlyOutputTokens / 1_000_000) * (model.outputPer1M ?? 0);
+  const retryMultiplier = 1 + (usage.retryRate ?? 0);
+  const totalCost = (inputCost + outputCost) * retryMultiplier;
   const costPerRequest = safeDivide(totalCost, monthlyRequests, 0);
   const costPer1KRequests =
     costPerRequest * 1000;
@@ -153,6 +191,65 @@ export function computeCostReport(
   };
 }
 
+export function computeBudgetReport(
+  input: {
+    monthlyBudget: unknown;
+    avgInputTokens: unknown;
+    avgOutputTokens: unknown;
+  },
+  models: ModelPrice[],
+): BudgetReport {
+  const monthlyBudget = toSafeNumber(input.monthlyBudget, 0);
+  const avgInputTokens = toSafeNumber(input.avgInputTokens, 0);
+  const avgOutputTokens = toSafeNumber(input.avgOutputTokens, 0);
+
+  const breakdowns = models
+    .map((model) => {
+      const inputCostPerRequest =
+        (avgInputTokens / 1_000_000) * (model.inputPer1M ?? 0);
+      const outputCostPerRequest =
+        (avgOutputTokens / 1_000_000) * (model.outputPer1M ?? 0);
+      const costPerRequest = inputCostPerRequest + outputCostPerRequest;
+      const maxRequests =
+        costPerRequest > 0
+          ? Math.floor(safeDivide(monthlyBudget, costPerRequest, 0))
+          : 0;
+      const estimatedSpend = maxRequests * costPerRequest;
+      const unusedBudget = Math.max(monthlyBudget - estimatedSpend, 0);
+
+      return {
+        model,
+        monthlyBudget,
+        avgInputTokens,
+        avgOutputTokens,
+        inputCostPerRequest,
+        outputCostPerRequest,
+        costPerRequest,
+        costPer1KRequests: costPerRequest * 1000,
+        maxRequests,
+        estimatedSpend,
+        unusedBudget,
+      };
+    })
+    .sort((a, b) => {
+      if (b.maxRequests !== a.maxRequests) {
+        return b.maxRequests - a.maxRequests;
+      }
+      return a.costPerRequest - b.costPerRequest;
+    });
+
+  const bestValue = breakdowns.find((b) => b.maxRequests > 0) ?? null;
+
+  return {
+    monthlyBudget,
+    avgInputTokens,
+    avgOutputTokens,
+    models: breakdowns,
+    bestValueModelId: bestValue?.model.model ?? null,
+    bestValueRequests: bestValue?.maxRequests ?? 0,
+  };
+}
+
 /**
  * Format a number as USD with sensible precision for cost columns.
  * - Always returns a finite numeric string.
@@ -179,4 +276,44 @@ export function formatRequests(value: number): string {
 export function formatPercent(value: number): string {
   const v = Number.isFinite(value) ? value : 0;
   return `${(v * 100).toFixed(1)}%`;
+}
+
+// =============================================================================
+// Quick Estimation Mode (new)
+// Simplified inputs for non-technical users
+// =============================================================================
+
+/**
+ * Simplified usage input for quick estimation mode.
+ * Users select length options instead of raw token numbers.
+ */
+export interface QuickUsageInput {
+  dailyUsers: number;
+  requestsPerUserPerDay: number;
+  avgInputTokens: number;
+  avgOutputTokens: number;
+}
+
+/**
+ * Convert quick mode inputs to standard UsageInput for cost calculation.
+ * Quick mode calculates monthly requests as: dailyUsers * requestsPerUserPerDay * 30
+ */
+export function quickToStandardUsage(input: QuickUsageInput): UsageInput {
+  return {
+    requestsPerDay: input.dailyUsers * input.requestsPerUserPerDay,
+    daysPerMonth: 30,
+    activeUsers: input.dailyUsers,
+    avgInputTokens: input.avgInputTokens,
+    avgOutputTokens: input.avgOutputTokens,
+    retryRate: 0,
+  };
+}
+
+/**
+ * Compute monthly requests from quick mode inputs.
+ */
+export function computeQuickMonthlyRequests(input: QuickUsageInput): number {
+  const dailyUsers = toSafeNumber(input.dailyUsers, 0);
+  const requestsPerUserPerDay = toSafeNumber(input.requestsPerUserPerDay, 0);
+  return dailyUsers * requestsPerUserPerDay * 30;
 }

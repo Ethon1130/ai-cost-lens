@@ -7,10 +7,24 @@ export interface AppCopy {
   controls: {
     languageLabel: string;
     themeLabel: string;
+    currencyLabel: string;
     english: string;
     chinese: string;
     light: string;
     dark: string;
+    currencyUsd: string;
+    currencyCny: string;
+    rateDemo: string;
+    rateLive: string;
+  };
+  modelFilter: {
+    searchPlaceholder: string;
+    allProviders: string;
+    provider: string;
+    filterByProvider: string;
+    selectAll: string;
+    clear: string;
+    models: string;
   };
   hero: {
     badge: string;
@@ -46,6 +60,14 @@ export interface AppCopy {
     applyHint: string;
     targets: Record<ScenarioKind, string>;
   };
+  mode: {
+    heading: string;
+    description: string;
+    trafficMode: string;
+    trafficDescription: string;
+    budgetMode: string;
+    budgetDescription: string;
+  };
   usage: {
     heading: string;
     description: string;
@@ -55,6 +77,8 @@ export interface AppCopy {
     daysPerMonthHint: string;
     activeUsers: string;
     activeUsersHint: string;
+    retryRate: string;
+    retryRateHint: string;
   };
   summary: {
     heading: string;
@@ -71,6 +95,27 @@ export interface AppCopy {
     estimateNote: string;
     noTraffic: string;
   };
+  budget: {
+    heading: string;
+    description: string;
+    monthlyBudget: string;
+    monthlyBudgetHint: string;
+    bestValue: string;
+    bestValueTitle: string;
+    maxRequests: string;
+    costPerRequest: string;
+    costPer1KRequests: string;
+    estimatedSpend: string;
+    unusedBudget: string;
+    avgInputTokens: string;
+    avgOutputTokens: string;
+    budgetLabel: string;
+    ranking: string;
+    model: string;
+    provider: string;
+    note: string;
+    noBudget: string;
+  };
   savings: {
     heading: string;
     description: string;
@@ -83,6 +128,8 @@ export interface AppCopy {
   };
   table: {
     heading: string;
+    select: string;
+    selectForComparison: string;
     description: string;
     model: string;
     provider: string;
@@ -93,6 +140,21 @@ export interface AppCopy {
     per1KRequests: string;
     perUserPerMonth: string;
     cheapest: string;
+  };
+  comparison: {
+    heading: string;
+    description: string;
+    metric: string;
+    inputCost: string;
+    outputCost: string;
+    totalCost: string;
+    costPerRequest: string;
+    costPer1KRequests: string;
+    costPerUserPerMonth: string;
+    switchingTo: string;
+    saves: string;
+    perMonth: string;
+    clear: string;
   };
   sources: {
     heading: string;
@@ -105,6 +167,37 @@ export interface AppCopy {
     heading: string;
     items: string[];
   };
+  // TODO(P0): 新增 copy.costBreakdown 段落：
+  //   inputCost / outputCost / cachedInputCost / retryCost / fxImpact / batchDiscount
+  // TODO(P0): 新增 copy.optimization 段落（成本优化建议区块的 i18n）
+  // TODO(P0): 新增 copy.quickEstimate 段落（快速估算模式的 UI 文案）
+  quickEstimate: {
+    heading: string;
+    description: string;
+    scenarioLabel: string;
+    dailyUsersLabel: string;
+    dailyUsersHint: string;
+    requestsPerUserLabel: string;
+    requestsPerUserHint: string;
+    inputComplexityLabel: string;
+    outputLengthLabel: string;
+    resultHeading: string;
+    cheapestModel: string;
+    recommendation: string;
+    monthlyRequests: string;
+    noTraffic: string;
+  };
+  primaryMode: {
+    quick: string;
+    quickDescription: string;
+    advanced: string;
+    advancedDescription: string;
+  };
+  // TODO(P1): 新增 copy.batchMode 段落（批处理模式开关和说明）
+  // TODO(P1): 新增 copy.combo 段落（模型组合推荐的标题和选项文案）
+  // TODO(P1): 新增 copy.export 段落（导出 Markdown / JSON 按钮文案）
+  // TODO(P1): 新增 copy.billingMode 段落（Token/Runtime/Output 三种计费模型说明）
+  // TODO(P2): 新增 copy.imageCost 段落（图片成本估算器的 UI 文案）
 }
 
 export const COPY: Record<Language, AppCopy> = {
@@ -112,16 +205,30 @@ export const COPY: Record<Language, AppCopy> = {
     controls: {
       languageLabel: "Language",
       themeLabel: "Display",
+      currencyLabel: "Currency",
       english: "Switch to English",
       chinese: "切换到中文",
       light: "Switch to day mode",
       dark: "Switch to night mode",
+      currencyUsd: "Switch to USD",
+      currencyCny: "切换到人民币",
+      rateDemo: "Demo rate: 1 USD ≈ 7.25 CNY",
+      rateLive: "Live rate: 1 USD ≈ {rate} CNY",
+    },
+    modelFilter: {
+      searchPlaceholder: "Search models...",
+      allProviders: "All Providers",
+      provider: "Provider",
+      filterByProvider: "Filter by Provider",
+      selectAll: "All",
+      clear: "Clear",
+      models: "models",
     },
     hero: {
       badge: "AI Cost Lens",
       title: "AI API cost simulator for early-stage products.",
       description:
-        "Pick a product scenario, tune the token assumptions behind it, and compare monthly cost across official OpenAI, Anthropic, and Google pricing snapshots. No account, no API key, no external calls.",
+        "Pick a product scenario, tune the token assumptions behind it, and compare monthly cost across official OpenAI (GPT), Anthropic (Claude), and Google (Gemini) pricing snapshots. No account, no API key, no external calls.",
       footer:
         "Built for indie devs evaluating an AI project. Data is a manual snapshot; verify the latest price on the linked official page before making a decision.",
     },
@@ -260,8 +367,17 @@ export const COPY: Record<Language, AppCopy> = {
         summarizer: "Document tokens",
       },
     },
+    mode: {
+      heading: "4. Choose calculation mode",
+      description:
+        "Estimate expected traffic cost, or reverse the question from a fixed monthly budget.",
+      trafficMode: "Traffic Mode",
+      trafficDescription: "How much will my expected usage cost?",
+      budgetMode: "Budget Mode",
+      budgetDescription: "How many requests can my budget support?",
+    },
     usage: {
-      heading: "4. Estimate API usage",
+      heading: "5. Estimate API usage",
       description:
         "Estimate direct API call volume first. Active users are optional and only affect the per-user product lens.",
       requestsPerDay: "API requests / day",
@@ -273,6 +389,9 @@ export const COPY: Record<Language, AppCopy> = {
       activeUsers: "Active users (optional)",
       activeUsersHint:
         "Only used for cost per active user; it does not change tokens or monthly cost.",
+      retryRate: "Retry rate",
+      retryRateHint:
+        "Share of failed requests that are retried (0 = none, 0.1 = 10%). Retries multiply total cost.",
     },
     summary: {
       heading: "5. Unit economics summary",
@@ -291,6 +410,31 @@ export const COPY: Record<Language, AppCopy> = {
         "Costs are estimates based on the snapshot prices below. They do not include free tiers, taxes, enterprise discounts, or rate limits.",
       noTraffic: "Enter some traffic in step 3 to see real numbers.",
     },
+    budget: {
+      heading: "Budget mode",
+      description:
+        "Estimate how many requests each model can support under a fixed monthly AI budget.",
+      monthlyBudget: "Monthly budget (USD)",
+      monthlyBudgetHint:
+        "Your hard monthly AI budget. The ranking reuses the current scenario token assumptions.",
+      bestValue: "Most runway",
+      bestValueTitle: "The model that supports the most requests under this budget.",
+      maxRequests: "Max requests",
+      costPerRequest: "Cost / request",
+      costPer1KRequests: "Cost / 1K requests",
+      estimatedSpend: "Estimated spend",
+      unusedBudget: "Unused budget",
+      avgInputTokens: "Input / request",
+      avgOutputTokens: "Output / request",
+      budgetLabel: "Budget",
+      ranking: "Budget runway ranking",
+      model: "Model",
+      provider: "Provider",
+      note:
+        "This uses the current scenario token assumptions and official pricing snapshot. It is an estimate, not a billing guarantee.",
+      noBudget:
+        "Enter a monthly budget above $0 and keep token assumptions above 0 to see runway estimates.",
+    },
     savings: {
       heading: "6. Model savings comparison",
       description:
@@ -306,6 +450,8 @@ export const COPY: Record<Language, AppCopy> = {
       heading: "7. Per-model monthly cost",
       description:
         "Scroll horizontally on small screens. Cheapest model is highlighted.",
+      select: "Sel",
+      selectForComparison: "Select up to 2 models for comparison",
       model: "Model",
       provider: "Provider",
       input: "Input",
@@ -315,6 +461,21 @@ export const COPY: Record<Language, AppCopy> = {
       per1KRequests: "Per 1k req",
       perUserPerMonth: "Per user / mo",
       cheapest: "Cheapest",
+    },
+    comparison: {
+      heading: "Model Comparison",
+      description: "Compare two selected models side by side.",
+      metric: "Metric",
+      inputCost: "Input Cost",
+      outputCost: "Output Cost",
+      totalCost: "Total Cost",
+      costPerRequest: "Cost / Request",
+      costPer1KRequests: "Cost / 1K Requests",
+      costPerUserPerMonth: "Cost / User / Month",
+      switchingTo: "Switching to",
+      saves: "saves",
+      perMonth: "per month",
+      clear: "Clear",
     },
     sources: {
       heading: "8. Pricing sources",
@@ -336,24 +497,60 @@ export const COPY: Record<Language, AppCopy> = {
         "The text token estimator uses the GPT tokenizer locally; Claude and Gemini token counts may differ.",
         "Scenario-specific parameters such as RAG chunks and Agent calls are educated defaults, not measurements of your real product.",
         "Cache hit rate, cache write cost, TTL, subscriptions, taxes, and regional pricing are not included in this P0 calculator.",
-        "Third-party pricing aggregators (e.g. OpenRouter, LiteLLM) are not used as a data source.",
+        "Exchange rate is a demo rate (live fetch with 7.25 fallback); not a financial-grade FX quote.",
       ],
+    },
+    quickEstimate: {
+      heading: "Quick Estimate",
+      description: "Answer a few simple questions to get a rough monthly cost. No token math required.",
+      scenarioLabel: "Use case",
+      dailyUsersLabel: "Expected daily active users",
+      dailyUsersHint: "How many users interact with your AI per day",
+      requestsPerUserLabel: "Requests per user / day",
+      requestsPerUserHint: "Average API calls each user makes per day",
+      inputComplexityLabel: "Input complexity",
+      outputLengthLabel: "Output length",
+      resultHeading: "Estimated monthly cost",
+      cheapestModel: "Cheapest option",
+      recommendation: "Recommendation",
+      monthlyRequests: "Monthly requests",
+      noTraffic: "Enter usage above to see cost estimates",
+    },
+    primaryMode: {
+      quick: "Quick Estimate",
+      quickDescription: "For non-technical users",
+      advanced: "Advanced Mode",
+      advancedDescription: "For developers who know their tokens",
     },
   },
   zh: {
     controls: {
       languageLabel: "语言",
       themeLabel: "显示模式",
+      currencyLabel: "货币",
       english: "Switch to English",
       chinese: "切换到中文",
       light: "切换到白天模式",
       dark: "切换到晚上模式",
+      currencyUsd: "切换到美元",
+      currencyCny: "Switch to CNY",
+      rateDemo: "演示汇率: 1 USD ≈ 7.25 CNY",
+      rateLive: "实时汇率: 1 USD ≈ {rate} CNY",
+    },
+    modelFilter: {
+      searchPlaceholder: "搜索模型...",
+      allProviders: "全部厂家",
+      provider: "厂家",
+      filterByProvider: "按厂家筛选",
+      selectAll: "全选",
+      clear: "清除",
+      models: "个模型",
     },
     hero: {
       badge: "AI Cost Lens",
       title: "面向早期 AI 产品的 API 成本模拟器。",
       description:
-        "选择产品场景，调整真实 token 假设，并基于 OpenAI、Anthropic、Google 官方价格快照对比每月成本。无需账号、无需 API key、无需外部调用。",
+        "选择产品场景，调整真实 token 假设，并基于 OpenAI (GPT)、Anthropic (Claude)、Google (Gemini) 官方价格快照对比每月成本。无需账号、无需 API key、无需外部调用。",
       footer:
         "为评估 AI 项目的独立开发者构建。价格数据是人工快照，做决策前请在链接的官方页面核对最新价格。",
     },
@@ -487,8 +684,16 @@ export const COPY: Record<Language, AppCopy> = {
         summarizer: "文档 token",
       },
     },
+    mode: {
+      heading: "4. 选择计算模式",
+      description: "既可以估算预期流量成本，也可以从固定月预算反推可支持请求量。",
+      trafficMode: "流量模式",
+      trafficDescription: "我的预期用量大概要花多少钱？",
+      budgetMode: "预算控制模式",
+      budgetDescription: "我的预算最多能支持多少请求？",
+    },
     usage: {
-      heading: "4. 估算 API 用量",
+      heading: "5. 估算 API 用量",
       description:
         "先直接估算 API 调用量。活跃用户是可选产品视角，只影响每用户成本。",
       requestsPerDay: "每日 API 请求数",
@@ -498,6 +703,9 @@ export const COPY: Record<Language, AppCopy> = {
       activeUsers: "活跃用户（可选）",
       activeUsersHint:
         "只用于计算每活跃用户成本，不会改变 token 或月总成本。",
+      retryRate: "失败重试率",
+      retryRateHint:
+        "失败请求被重试的比例（0 = 不重试，0.1 = 10%）。重试会等比放大总成本。",
     },
     summary: {
       heading: "5. Unit economics 摘要",
@@ -516,6 +724,30 @@ export const COPY: Record<Language, AppCopy> = {
         "成本基于下方价格快照估算，不包含免费额度、税费、企业折扣或速率限制。",
       noTraffic: "在第 3 步输入流量后即可看到真实估算数字。",
     },
+    budget: {
+      heading: "预算控制模式",
+      description: "估算固定月度 AI 预算下，每个模型大约可以支持多少次请求。",
+      monthlyBudget: "每月预算（USD）",
+      monthlyBudgetHint:
+        "你的 AI 月度硬预算。排行会复用当前场景的 token 假设。",
+      bestValue: "可跑最多",
+      bestValueTitle: "在该预算下可支持请求量最多的模型。",
+      maxRequests: "最多请求量",
+      costPerRequest: "每请求成本",
+      costPer1KRequests: "每 1K 请求成本",
+      estimatedSpend: "预计花费",
+      unusedBudget: "剩余预算",
+      avgInputTokens: "每请求输入",
+      avgOutputTokens: "每请求输出",
+      budgetLabel: "预算",
+      ranking: "预算可跑量排行",
+      model: "模型",
+      provider: "服务商",
+      note:
+        "这里复用当前场景 token 假设和官方价格快照。结果是估算，不是账单保证。",
+      noBudget:
+        "输入大于 $0 的月预算，并保持 token 假设大于 0，即可查看可跑量估算。",
+    },
     savings: {
       heading: "6. 模型节省对比",
       description:
@@ -530,6 +762,8 @@ export const COPY: Record<Language, AppCopy> = {
     table: {
       heading: "7. 各模型月成本",
       description: "小屏幕可横向滚动。最便宜模型会被高亮。",
+      select: "选择",
+      selectForComparison: "选择最多 2 个模型进行对比",
       model: "模型",
       provider: "服务商",
       input: "输入",
@@ -539,6 +773,21 @@ export const COPY: Record<Language, AppCopy> = {
       per1KRequests: "每 1K 请求",
       perUserPerMonth: "每用户 / 月",
       cheapest: "最便宜",
+    },
+    comparison: {
+      heading: "模型对比",
+      description: "并排对比两个选中的模型。",
+      metric: "指标",
+      inputCost: "输入成本",
+      outputCost: "输出成本",
+      totalCost: "总成本",
+      costPerRequest: "每请求成本",
+      costPer1KRequests: "每 1K 请求成本",
+      costPerUserPerMonth: "每用户月成本",
+      switchingTo: "切换到",
+      saves: "每月可节省",
+      perMonth: "",
+      clear: "清除",
     },
     sources: {
       heading: "8. 价格来源",
@@ -560,8 +809,30 @@ export const COPY: Record<Language, AppCopy> = {
         "文本 Token 估算器在浏览器本地使用 GPT tokenizer；Claude 和 Gemini 的 token 数可能不同。",
         "RAG chunk 数和 Agent 调用次数等场景参数是经验默认值，不是你的真实产品测量结果。",
         "这个 P0 计算器暂不包含缓存命中率、缓存写入成本、TTL、订阅收入、税费和区域价格。",
-        "第三方价格聚合器（例如 OpenRouter、LiteLLM）未作为数据源使用。",
+        "汇率为演示汇率（动态拉取，失败回退 7.25），不是金融级实时报价。",
       ],
+    },
+    quickEstimate: {
+      heading: "快速估算",
+      description: "回答几个简单问题，快速估算月成本。无需了解 token 计算。",
+      scenarioLabel: "使用场景",
+      dailyUsersLabel: "预计日活用户数",
+      dailyUsersHint: "每天有多少用户使用你的 AI 产品",
+      requestsPerUserLabel: "每人每天调用次数",
+      requestsPerUserHint: "每位用户平均每天发起多少次 API 调用",
+      inputComplexityLabel: "输入复杂度",
+      outputLengthLabel: "输出长度",
+      resultHeading: "预计月成本",
+      cheapestModel: "最便宜方案",
+      recommendation: "建议",
+      monthlyRequests: "月请求量",
+      noTraffic: "输入用量后可查看成本估算",
+    },
+    primaryMode: {
+      quick: "快速估算",
+      quickDescription: "适合普通用户",
+      advanced: "高级模式",
+      advancedDescription: "适合懂 token 的开发者",
     },
   },
 };

@@ -31,6 +31,8 @@ with the real URL after deployment).
   and optional cost per active user per month.
 - Shows estimated savings when switching from the highest-cost model in the
   snapshot to the cheapest model.
+- Includes Budget Mode, which reverses the question and estimates how many
+  requests each model can support under a fixed monthly AI budget.
 - Lists official pricing source URLs and checked dates.
 
 ## Features
@@ -47,6 +49,8 @@ with the real URL after deployment).
 - Input/output cost split per model
 - Unit economics summary
 - Model savings comparison
+- Budget Mode with per-model request runway ranking and lightweight bar
+  visualization
 - Chinese / English language toggle
 - Day / night display mode toggle
 - Mobile-friendly layout with scrollable comparison tables
@@ -124,7 +128,6 @@ Anthropic, Google, OpenRouter, LiteLLM, or any other model or pricing API.
 
 - URL-based sharing
 - Copy share link
-- Budget mode
 - Cache hit rate simulation
 - Gross margin with subscription-price input
 - Copy Markdown report
@@ -149,6 +152,7 @@ components/
   ScenarioParams.tsx
   TokenEstimator.tsx
   UsageForm.tsx
+  BudgetMode.tsx
   CostSummary.tsx
   SavingsComparison.tsx
   CostTable.tsx

@@ -1,16 +1,19 @@
 import {
   formatPercent,
-  formatUsd,
+  formatCurrency,
 } from "@/lib/calculate";
 import type { CostReport } from "@/lib/calculate";
+import type { Currency } from "@/lib/currency";
 import type { AppCopy } from "@/lib/i18n";
 
 interface SavingsComparisonProps {
   report: CostReport;
   copy: AppCopy["savings"];
+  currency: Currency;
+  exchangeRate: number;
 }
 
-export function SavingsComparison({ report, copy }: SavingsComparisonProps) {
+export function SavingsComparison({ report, copy, currency, exchangeRate }: SavingsComparisonProps) {
   const from = report.models.find(
     (b) => b.model.model === report.savingsIfSwitchToCheapest.fromModelId,
   );
@@ -47,7 +50,7 @@ export function SavingsComparison({ report, copy }: SavingsComparisonProps) {
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Metric
           label={copy.monthlySavings}
-          value={formatUsd(report.savingsIfSwitchToCheapest.amount)}
+          value={formatCurrency(report.savingsIfSwitchToCheapest.amount, currency, exchangeRate)}
         />
         <Metric
           label={copy.percentSavings}

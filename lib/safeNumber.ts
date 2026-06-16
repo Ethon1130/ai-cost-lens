@@ -36,6 +36,13 @@ export function toSafeInteger(value: unknown, fallback = 0): number {
 }
 
 /**
+ * Clamp a value to the [0, 1] range, used for rates like retryRate.
+ */
+export function clamp01(value: unknown, fallback = 0): number {
+  return toSafeNumber(value, fallback, { min: 0, max: 1 });
+}
+
+/**
  * Divide a by b, returning `fallback` when the result would be NaN / Infinity.
  * Prevents divide-by-zero explosions in the cost formulas.
  */

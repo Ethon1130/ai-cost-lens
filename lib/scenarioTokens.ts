@@ -12,7 +12,14 @@ export interface ScenarioTokenEstimate {
   avgInputTokens: number;
   avgOutputTokens: number;
   note: string;
+  // TODO(P0): 增加 avgCachedInputTokens 字段（如果用户启用了 cacheHitRate，
+  //   cachedInputTokens = monthlyInputTokens * cacheHitRate，单独用 cached price 计算）。
 }
+
+// TODO(P0): deriveScenarioTokens() 需要接受 cacheHitRate 参数，计算：
+//   freshInputTokens = avgInputTokens * (1 - cacheHitRate)
+//   cachedInputTokens = avgInputTokens * cacheHitRate
+//   avgCachedInputTokens 用于 computeCostReport 的分拆计算。
 
 export function deriveScenarioTokens(
   params: ScenarioParams,
