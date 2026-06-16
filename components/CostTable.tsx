@@ -13,7 +13,7 @@ export function CostTable({ report }: CostTableProps) {
           id="table-heading"
           className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
         >
-          4. Per-model monthly cost
+          6. Per-model monthly cost
         </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Scroll horizontally on small screens. Cheapest model is highlighted.
@@ -39,7 +39,13 @@ export function CostTable({ report }: CostTableProps) {
                 Total / mo
               </th>
               <th scope="col" className="px-4 py-3 text-right font-medium">
+                Per req
+              </th>
+              <th scope="col" className="px-4 py-3 text-right font-medium">
                 Per 1k req
+              </th>
+              <th scope="col" className="px-4 py-3 text-right font-medium">
+                Per user / mo
               </th>
             </tr>
           </thead>
@@ -81,7 +87,13 @@ export function CostTable({ report }: CostTableProps) {
                     {formatUsd(b.totalCost)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-600 dark:text-zinc-400">
+                    {formatUsd(b.costPerRequest)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-600 dark:text-zinc-400">
                     {formatUsd(b.costPer1KRequests)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-600 dark:text-zinc-400">
+                    {formatUsd(b.costPerActiveUserPerMonth)}
                   </td>
                 </tr>
               );

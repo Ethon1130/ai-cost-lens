@@ -4,12 +4,13 @@
  *
  * Verifies that:
  *  - boundary inputs (0, empty, negative, NaN, huge) never produce NaN/Infinity
- *  - 5 scenarios + 6 models produce sane per-model breakdowns
- *  - cheapest-model selection is deterministic
+ *  - 5 scenarios derive scenario-specific input/output token assumptions
+ *  - unit economics and savings comparison stay finite and deterministic
  */
 import { computeCostReport, sanitizeUsage } from "../lib/calculate";
 import { MODELS } from "../lib/pricing";
 import { SCENARIOS } from "../lib/scenarios";
+import { deriveScenarioTokens } from "../lib/scenarioTokens";
 import { toSafeNumber, safeDivide } from "../lib/safeNumber";
 
 let failures = 0;
@@ -34,6 +35,8 @@ check("toSafeNumber(Infinity) -> 0", toSafeNumber(Infinity) === 0);
 check("toSafeNumber('42.5') -> 42.5", toSafeNumber("42.5") === 42.5);
 check("toSafeNumber('1e9') -> 1e9", toSafeNumber("1e9") === 1_000_000_000);
 check("toSafeNumber(0) -> 0", toSafeNumber(0) === 0);
+check("toSafeNumber('2.9', integer) -> 2", toSafeNumber("2.9", 0, { integer: true }) === 2);
+check("toSafeNumber('99', max 10) -> 10", toSafeNumber("99", 0, { max: 10 }) === 10);
 check("safeDivide(10, 0) -> 0", safeDivide(10, 0) === 0);
 check("safeDivide(10, 2) -> 5", safeDivide(10, 2) === 5);
 check("safeDivide(NaN, 1) -> 0", safeDivide(NaN, 1) === 0);
@@ -59,35 +62,64 @@ console.log("\n== boundary computeCostReport ==");
 const zeros = computeCostReport(s1, MODELS);
 assertFinite("zeros totalCost", zeros.models[0].totalCost);
 check("zeros cheapestModelId is null", zeros.cheapestModelId === null);
+check("zeros mostExpensiveModelId is null", zeros.mostExpensiveModelId === null);
 check("zeros monthlyRequests = 0", zeros.monthlyRequests === 0);
 check("zeros costPer1KRequests = 0", zeros.models[0].costPer1KRequests === 0);
+check("zeros costPerRequest = 0", zeros.models[0].costPerRequest === 0);
+check("zeros savings amount = 0", zeros.savingsIfSwitchToCheapest.amount === 0);
 
 const big = computeCostReport(s2, MODELS);
 assertFinite("huge inputCost", big.models[0].inputCost);
 assertFinite("huge outputCost", big.models[0].outputCost);
 assertFinite("huge totalCost", big.models[0].totalCost);
+assertFinite("huge costPerRequest", big.models[0].costPerRequest);
 assertFinite("huge costPer1KRequests", big.models[0].costPer1KRequests);
+assertFinite("huge costPerActiveUserPerMonth", big.models[0].costPerActiveUserPerMonth);
 check("huge monthlyRequests correct", big.monthlyRequests === 100 * 5 * 30);
 
 console.log("\n== 5 scenarios x 6 models ==");
 for (const s of SCENARIOS) {
-  const r = computeCostReport(s.usage, MODELS);
+  const tokens = deriveScenarioTokens(s.params);
+  const usage = {
+    ...s.usage,
+    avgInputTokens: tokens.avgInputTokens,
+    avgOutputTokens: tokens.avgOutputTokens,
+  };
+  const r = computeCostReport(usage, MODELS);
+  assertFinite(`[${s.id}] avgInputTokens`, tokens.avgInputTokens);
+  assertFinite(`[${s.id}] avgOutputTokens`, tokens.avgOutputTokens);
+  check(`[${s.id}] token derivation non-negative`, tokens.avgInputTokens >= 0 && tokens.avgOutputTokens >= 0);
   assertFinite(`[${s.id}] totalCost`, r.models[0].totalCost);
   check(`[${s.id}] produces 6 rows`, r.models.length === 6);
   check(`[${s.id}] cheapest selected`, r.cheapestModelId !== null);
+  check(`[${s.id}] most expensive selected`, r.mostExpensiveModelId !== null);
   const allPos = r.models.every((b) => b.totalCost >= 0);
   check(`[${s.id}] all totals non-negative`, allPos);
   const sorted = [...r.models].sort((a, b) => a.totalCost - b.totalCost);
   const expectedCheapest = sorted[0].model.model;
+  const expectedMostExpensive = sorted[sorted.length - 1].model.model;
   check(
     `[${s.id}] cheapest matches sort`,
     r.cheapestModelId === expectedCheapest,
     `got=${r.cheapestModelId} expected=${expectedCheapest}`,
   );
+  check(
+    `[${s.id}] most expensive matches sort`,
+    r.mostExpensiveModelId === expectedMostExpensive,
+    `got=${r.mostExpensiveModelId} expected=${expectedMostExpensive}`,
+  );
+  assertFinite(`[${s.id}] savings amount`, r.savingsIfSwitchToCheapest.amount);
+  assertFinite(`[${s.id}] savings percent`, r.savingsIfSwitchToCheapest.percent);
+  check(`[${s.id}] savings percent <= 1`, r.savingsIfSwitchToCheapest.percent <= 1);
 }
 
 console.log("\n== formula sanity (default scenario) ==");
-const def = SCENARIOS[0].usage;
+const defTokens = deriveScenarioTokens(SCENARIOS[0].params);
+const def = {
+  ...SCENARIOS[0].usage,
+  avgInputTokens: defTokens.avgInputTokens,
+  avgOutputTokens: defTokens.avgOutputTokens,
+};
 const defR = computeCostReport(def, MODELS);
 const expectedMonthlyReq = def.dailyUsers * def.requestsPerUserPerDay * 30;
 check("monthlyRequests formula", defR.monthlyRequests === expectedMonthlyReq);
@@ -98,6 +130,34 @@ check("flash inputCost ~ expected", Math.abs(flash.inputCost - expectedInputCost
 check("flash outputCost ~ expected", Math.abs(flash.outputCost - expectedOutputCost) < 1e-9);
 check("flash total = input + output", Math.abs(flash.totalCost - (flash.inputCost + flash.outputCost)) < 1e-9);
 check("flash per1k = total/monthlyReq*1000", Math.abs(flash.costPer1KRequests - (flash.totalCost / expectedMonthlyReq) * 1000) < 1e-9);
+check("flash per request = total/monthlyReq", Math.abs(flash.costPerRequest - (flash.totalCost / expectedMonthlyReq)) < 1e-9);
+check("flash per user = total/dailyUsers", Math.abs(flash.costPerActiveUserPerMonth - (flash.totalCost / def.dailyUsers)) < 1e-9);
+
+console.log("\n== scenario formula sanity ==");
+const rag = SCENARIOS.find((s) => s.id === "rag-knowledge-base")!;
+if (rag.params.kind === "rag") {
+  const ragTokens = deriveScenarioTokens(rag.params);
+  const expectedInput =
+    rag.params.values.systemPromptTokens +
+    rag.params.values.userQuestionTokens +
+    rag.params.values.topK * rag.params.values.avgChunkTokens;
+  check("RAG avg input formula", ragTokens.avgInputTokens === expectedInput);
+  check("RAG avg output formula", ragTokens.avgOutputTokens === rag.params.values.answerTokens);
+}
+const agent = SCENARIOS.find((s) => s.id === "ai-agent-workflow")!;
+if (agent.params.kind === "agent") {
+  const agentTokens = deriveScenarioTokens(agent.params);
+  const calls = agent.params.values.baseCalls + agent.params.values.retries;
+  check(
+    "Agent avg input formula",
+    agentTokens.avgInputTokens ===
+      calls * (agent.params.values.systemPromptTokens + agent.params.values.toolResultTokens),
+  );
+  check(
+    "Agent avg output formula",
+    agentTokens.avgOutputTokens === calls * agent.params.values.finalAnswerTokens,
+  );
+}
 
 console.log("\n== summary ==");
 console.log(`failures: ${failures}`);

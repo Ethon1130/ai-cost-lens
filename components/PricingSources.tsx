@@ -14,7 +14,7 @@ export function PricingSources() {
           id="sources-heading"
           className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
         >
-          5. Pricing sources
+          7. Pricing sources
         </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           All numbers are manually collected from each provider&apos;s official
@@ -38,7 +38,7 @@ export function PricingSources() {
                     {m.displayName}
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500">
-                    Input {formatUsdShort(m.inputPer1M)} / 1M · Output{" "}
+                    Input {formatUsdShort(m.inputPer1M)} / 1M - Output{" "}
                     {formatUsdShort(m.outputPer1M)} / 1M
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500">

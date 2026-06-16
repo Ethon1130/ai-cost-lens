@@ -114,7 +114,9 @@ export interface ModelCostBreakdown {
   inputCost: number;
   outputCost: number;
   totalCost: number;
+  costPerRequest: number;
   costPer1KRequests: number;
+  costPerActiveUserPerMonth: number;
 }
 
 export function getModelsByProvider(): Record<Provider, ModelPrice[]> {

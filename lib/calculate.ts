@@ -18,6 +18,16 @@ export interface CostReport {
   models: ModelCostBreakdown[];
   /** Model with the strictly lowest total cost. `null` when no traffic. */
   cheapestModelId: string | null;
+  /** Model with the highest total cost. `null` when no traffic. */
+  mostExpensiveModelId: string | null;
+  cheapestTotalCost: number;
+  mostExpensiveTotalCost: number;
+  savingsIfSwitchToCheapest: {
+    fromModelId: string | null;
+    toModelId: string | null;
+    amount: number;
+    percent: number;
+  };
 }
 
 /**
@@ -54,8 +64,14 @@ function computeForModel(
   const outputCost =
     (monthlyOutputTokens / 1_000_000) * model.outputPer1M;
   const totalCost = inputCost + outputCost;
+  const costPerRequest = safeDivide(totalCost, monthlyRequests, 0);
   const costPer1KRequests =
-    safeDivide(totalCost, monthlyRequests, 0) * 1000;
+    costPerRequest * 1000;
+  const costPerActiveUserPerMonth = safeDivide(
+    totalCost,
+    usage.dailyUsers,
+    0,
+  );
 
   return {
     model,
@@ -65,7 +81,9 @@ function computeForModel(
     inputCost,
     outputCost,
     totalCost,
+    costPerRequest,
     costPer1KRequests,
+    costPerActiveUserPerMonth,
   };
 }
 
@@ -86,12 +104,25 @@ export function computeCostReport(
   );
 
   let cheapest: ModelCostBreakdown | null = null;
+  let mostExpensive: ModelCostBreakdown | null = null;
   for (const b of breakdowns) {
     if (b.totalCost <= 0) continue;
     if (cheapest === null || b.totalCost < cheapest.totalCost) {
       cheapest = b;
     }
+    if (mostExpensive === null || b.totalCost > mostExpensive.totalCost) {
+      mostExpensive = b;
+    }
   }
+
+  const savingsAmount =
+    cheapest && mostExpensive
+      ? Math.max(mostExpensive.totalCost - cheapest.totalCost, 0)
+      : 0;
+  const savingsPercent =
+    mostExpensive && mostExpensive.totalCost > 0
+      ? safeDivide(savingsAmount, mostExpensive.totalCost, 0)
+      : 0;
 
   return {
     monthlyRequests,
@@ -99,6 +130,15 @@ export function computeCostReport(
     monthlyOutputTokens,
     models: breakdowns,
     cheapestModelId: cheapest?.model.model ?? null,
+    mostExpensiveModelId: mostExpensive?.model.model ?? null,
+    cheapestTotalCost: cheapest?.totalCost ?? 0,
+    mostExpensiveTotalCost: mostExpensive?.totalCost ?? 0,
+    savingsIfSwitchToCheapest: {
+      fromModelId: mostExpensive?.model.model ?? null,
+      toModelId: cheapest?.model.model ?? null,
+      amount: savingsAmount,
+      percent: savingsPercent,
+    },
   };
 }
 
@@ -123,4 +163,9 @@ export function formatTokens(value: number): string {
 /** Format a request count with thousand separators. */
 export function formatRequests(value: number): string {
   return formatTokens(value);
+}
+
+export function formatPercent(value: number): string {
+  const v = Number.isFinite(value) ? value : 0;
+  return `${(v * 100).toFixed(1)}%`;
 }

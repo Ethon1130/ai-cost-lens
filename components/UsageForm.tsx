@@ -1,4 +1,5 @@
 import type { UsageInput } from "@/lib/calculate";
+import { toSafeNumber } from "@/lib/safeNumber";
 
 interface UsageFormProps {
   usage: UsageInput;
@@ -6,7 +7,7 @@ interface UsageFormProps {
 }
 
 interface FieldProps {
-  id: keyof UsageInput;
+  id: "dailyUsers" | "requestsPerUserPerDay";
   label: string;
   hint: string;
   min?: number;
@@ -35,15 +36,13 @@ function NumberField({
       <input
         id={`field-${id}`}
         type="number"
-        inputMode="numeric"
+        inputMode="decimal"
         min={min}
         step={step}
         value={Number.isFinite(value) ? value : 0}
-        onChange={(e) => {
-          const raw = e.target.value;
-          const num = Number(raw);
-          onChange(Number.isFinite(num) && num >= 0 ? num : 0);
-        }}
+        onChange={(e) =>
+          onChange(toSafeNumber(e.target.value, 0, { min }))
+        }
         className={[
           "w-full rounded-lg border px-3 py-2 text-sm tabular-nums",
           "border-zinc-300 bg-white text-zinc-900",
@@ -65,11 +64,11 @@ export function UsageForm({ usage, onChange }: UsageFormProps) {
           id="usage-heading"
           className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
         >
-          2. Adjust usage assumptions
+          3. Adjust traffic assumptions
         </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          All inputs are sanitized to non-negative numbers. Empty or invalid
-          values fall back to 0 — the calculator will never show NaN.
+          Traffic inputs are sanitized to non-negative numbers. Average tokens
+          come from the scenario assumptions above.
         </p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -83,23 +82,9 @@ export function UsageForm({ usage, onChange }: UsageFormProps) {
         <NumberField
           id="requestsPerUserPerDay"
           label="Requests per user / day"
-          hint="Average number of model calls each user makes per day."
+          hint="Average number of AI tasks each user runs per day."
           value={usage.requestsPerUserPerDay}
           onChange={(v) => onChange({ ...usage, requestsPerUserPerDay: v })}
-        />
-        <NumberField
-          id="avgInputTokens"
-          label="Avg input tokens / request"
-          hint="System prompt + user message + retrieved context."
-          value={usage.avgInputTokens}
-          onChange={(v) => onChange({ ...usage, avgInputTokens: v })}
-        />
-        <NumberField
-          id="avgOutputTokens"
-          label="Avg output tokens / request"
-          hint="Tokens the model generates per response."
-          value={usage.avgOutputTokens}
-          onChange={(v) => onChange({ ...usage, avgOutputTokens: v })}
         />
       </div>
     </section>

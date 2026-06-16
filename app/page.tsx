@@ -5,26 +5,49 @@ import { CostSummary } from "@/components/CostSummary";
 import { CostTable } from "@/components/CostTable";
 import { KnownLimitations } from "@/components/KnownLimitations";
 import { PricingSources } from "@/components/PricingSources";
+import { SavingsComparison } from "@/components/SavingsComparison";
+import { ScenarioParams } from "@/components/ScenarioParams";
 import { ScenarioPresets } from "@/components/ScenarioPresets";
 import { UsageForm } from "@/components/UsageForm";
 import { computeCostReport } from "@/lib/calculate";
 import type { UsageInput } from "@/lib/calculate";
 import { MODELS } from "@/lib/pricing";
+import { deriveScenarioTokens } from "@/lib/scenarioTokens";
 import { getScenarioById, SCENARIOS } from "@/lib/scenarios";
+import type { ScenarioParams as ScenarioParamsType } from "@/lib/scenarios";
 
 export default function Home() {
   const defaultScenario = SCENARIOS[0];
   const [activeScenarioId, setActiveScenarioId] = useState(defaultScenario.id);
+  const [scenarioParams, setScenarioParams] = useState<ScenarioParamsType>(
+    defaultScenario.params,
+  );
   const [usage, setUsage] = useState<UsageInput>(defaultScenario.usage);
 
   const handleSelectScenario = (id: string) => {
     const next = getScenarioById(id);
     if (!next) return;
     setActiveScenarioId(next.id);
+    setScenarioParams(next.params);
     setUsage(next.usage);
   };
 
-  const report = useMemo(() => computeCostReport(usage, MODELS), [usage]);
+  const tokenEstimate = useMemo(
+    () => deriveScenarioTokens(scenarioParams),
+    [scenarioParams],
+  );
+  const computedUsage = useMemo<UsageInput>(
+    () => ({
+      ...usage,
+      avgInputTokens: tokenEstimate.avgInputTokens,
+      avgOutputTokens: tokenEstimate.avgOutputTokens,
+    }),
+    [usage, tokenEstimate],
+  );
+  const report = useMemo(
+    () => computeCostReport(computedUsage, MODELS),
+    [computedUsage],
+  );
 
   return (
     <div className="min-h-screen w-full bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-100">
@@ -34,12 +57,12 @@ export default function Home() {
             AI Cost Lens
           </span>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Estimate monthly AI API cost before you ship.
+            AI API cost simulator for early-stage products.
           </h1>
           <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400 sm:text-base">
-            Pick a project shape, tweak the usage numbers, and compare the
-            monthly cost across official OpenAI, Anthropic, and Google pricing
-            snapshots. No account, no API key, no external calls.
+            Pick a product scenario, tune the token assumptions behind it, and
+            compare monthly cost across official OpenAI, Anthropic, and Google
+            pricing snapshots. No account, no API key, no external calls.
           </p>
         </header>
 
@@ -47,15 +70,21 @@ export default function Home() {
           activeId={activeScenarioId}
           onSelect={handleSelectScenario}
         />
+        <ScenarioParams
+          params={scenarioParams}
+          tokenEstimate={tokenEstimate}
+          onChange={setScenarioParams}
+        />
         <UsageForm usage={usage} onChange={setUsage} />
         <CostSummary report={report} />
+        <SavingsComparison report={report} />
         <CostTable report={report} />
         <PricingSources />
         <KnownLimitations />
 
         <footer className="pt-2 text-xs text-zinc-500 dark:text-zinc-500">
           Built for indie devs evaluating an AI project. Data is a manual
-          snapshot — verify the latest price on the linked official page before
+          snapshot; verify the latest price on the linked official page before
           making a decision.
         </footer>
       </main>

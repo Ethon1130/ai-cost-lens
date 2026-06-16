@@ -4,10 +4,27 @@
  * Any value that is not a finite non-negative number is replaced with `fallback`.
  * This guarantees the calculator never sees NaN, Infinity, or negative numbers.
  */
-export function toSafeNumber(value: unknown, fallback = 0): number {
+export function toSafeNumber(
+  value: unknown,
+  fallback = 0,
+  options?: {
+    min?: number;
+    max?: number;
+    integer?: boolean;
+  },
+): number {
   const num = Number(value);
-  if (!Number.isFinite(num) || num < 0) return fallback;
-  return num;
+  if (!Number.isFinite(num)) return fallback;
+
+  const min = options?.min ?? 0;
+  const max = options?.max ?? Number.MAX_SAFE_INTEGER;
+  let safe = Math.min(Math.max(num, min), max);
+
+  if (options?.integer) {
+    safe = Math.floor(safe);
+  }
+
+  return safe;
 }
 
 /**
@@ -15,8 +32,7 @@ export function toSafeNumber(value: unknown, fallback = 0): number {
  * from URL strings like "5.5". Used for request counts.
  */
 export function toSafeInteger(value: unknown, fallback = 0): number {
-  const num = toSafeNumber(value, fallback);
-  return Math.floor(num);
+  return toSafeNumber(value, fallback, { integer: true });
 }
 
 /**

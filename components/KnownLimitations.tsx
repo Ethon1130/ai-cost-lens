@@ -28,6 +28,14 @@ export function KnownLimitations() {
           numbers you enter are rough assumptions.
         </li>
         <li>
+          Scenario-specific parameters such as RAG chunks and Agent calls are
+          educated defaults, not measurements of your real product.
+        </li>
+        <li>
+          Cache hit rate, cache write cost, TTL, subscriptions, taxes, and
+          regional pricing are not included in this P0 calculator.
+        </li>
+        <li>
           Third-party pricing aggregators (e.g. OpenRouter, LiteLLM) are not
           used as a data source.
         </li>

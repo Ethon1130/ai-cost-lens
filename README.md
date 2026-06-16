@@ -1,134 +1,156 @@
 # AI Cost Lens
 
-Estimate monthly AI API cost before you ship.
+AI Cost Lens is an AI API cost simulator for early-stage AI products. It helps
+developers estimate how much a planned AI feature might cost per month before
+shipping it.
 
-AI Cost Lens is a small, dependency-light single-page tool for indie developers
-and programmers who are about to build an AI feature. Pick a project shape,
-tweak the usage numbers, and see the monthly cost across official OpenAI,
-Anthropic, and Google pricing snapshots — all in your browser, with no account
-and no API key.
+The project is intentionally small and dependency-light: no account, no API key,
+no server-side model calls, and no external pricing API.
 
 ## Live demo
 
-Deployed on Vercel: <https://ai-cost-lens.vercel.app> (placeholder — replace
-with the real URL after the first deploy).
+Deployed on Vercel: <https://ai-cost-lens.vercel.app> (placeholder; replace
+with the real URL after deployment).
 
 ## What it does
 
-- **Scenario presets** for common AI product shapes: AI Chatbot MVP, RAG
-  Knowledge Base, Code Assistant, AI Agent Workflow, Document Summarizer.
-- **Live cost calculation** based on your inputs: daily users, requests per
-  user per day, average input tokens, average output tokens.
-- **Side-by-side comparison** of 6 models (OpenAI, Anthropic, Google) with
-  input / output / total monthly cost and cost per 1k requests.
-- **Cheapest model** is highlighted automatically.
-- **Clear data provenance**: every price links to its official pricing page
-  with a `checkedDate`.
+- Starts from common product scenarios: AI Chatbot MVP, RAG Knowledge Base, Code
+  Assistant, AI Agent Workflow, and Document Summarizer.
+- Lets you tune scenario-specific token assumptions such as RAG `topK`, chunk
+  size, Agent calls per task, code context length, and summarizer compression
+  ratio.
+- Computes monthly requests, monthly input tokens, monthly output tokens, input
+  cost, output cost, and total monthly cost.
+- Compares 6 models across OpenAI, Anthropic, and Google using manually checked
+  official pricing snapshots.
+- Highlights the cheapest model for the current assumptions.
+- Shows unit economics: monthly cost, cost per request, cost per 1K requests,
+  and cost per active user per month.
+- Shows estimated savings when switching from the highest-cost model in the
+  snapshot to the cheapest model.
+- Lists official pricing source URLs and checked dates.
 
 ## Features
 
-- 5 scenario presets, fully editable usage inputs
-- 6 models across 3 providers (OpenAI / Anthropic / Google)
-- Cheapest-model highlighting
-- Per-model input vs output cost split
-- Cost per 1k requests column
-- Mobile-friendly layout (single column, scrollable table, large tap targets)
-- Static, dependency-light (no state libraries, no API clients)
-- No external network calls after the initial page load
+- Scenario-specific cost modeling instead of a plain price table
+- Editable traffic assumptions: daily active users and requests per user per day
+- Editable scenario assumptions for chatbot, RAG, agent, code assistant, and
+  summarizer workflows
+- Safe numeric input handling for empty, invalid, negative, and extreme values
+- Input/output cost split per model
+- Unit economics summary
+- Model savings comparison
+- Mobile-friendly layout with scrollable comparison tables
+- Fully local browser calculation with no API key required
 
 ## Tech stack
 
-- [Next.js 16](https://nextjs.org/) (App Router)
+- [Next.js 16](https://nextjs.org/) with the App Router
 - [React 19](https://react.dev/)
-- [TypeScript](https://www.typescriptlang.org/) (strict mode)
+- [TypeScript](https://www.typescriptlang.org/)
 - [Tailwind CSS v4](https://tailwindcss.com/)
-- Hosted on [Vercel](https://vercel.com/)
+- Vercel-ready static deployment
 
 ## How to run locally
 
-Requires Node.js 20 or newer (this project was verified on Node 22).
+Requires Node.js 20 or newer.
 
 ```bash
-# install dependencies
 npm install
-
-# start dev server
 npm run dev
-# open http://localhost:3000
-
-# production build
-npm run build
-npm start
-
-# type-check only
-npx tsc --noEmit
-
-# lint
-npm run lint
 ```
 
-No environment variables are required to run the calculator.
+Open <http://localhost:3000>.
+
+Useful checks:
+
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+No environment variables are required.
 
 ## Pricing data policy
 
-- Prices live in [`lib/pricing.ts`](lib/pricing.ts) as a manual snapshot.
-- Each model records `sourceUrl` (the official pricing page) and `checkedDate`
-  (the day the snapshot was last verified).
-- Snapshot is not automatically refreshed. Prices may change after the checked
-  date — always verify on the linked official page before making a decision.
-- Third-party aggregators (OpenRouter, LiteLLM, etc.) are **not** used as a
-  data source for the calculator. They may only appear in future work as
-  optional reference material, and would be clearly labeled as such.
+- Pricing data lives in `lib/pricing.ts` as a manual snapshot.
+- Every model includes provider, model name, input price per 1M tokens, output
+  price per 1M tokens, official source URL, checked date, and notes.
+- Prices are not refreshed in real time.
+- Prices may change after the checked date.
+- Always verify the latest price on the linked official provider page before
+  making a real product or budget decision.
+- Third-party aggregators such as OpenRouter or LiteLLM are not used as primary
+  pricing sources.
 
 ## Known limitations
 
-- This is an estimator, not a billing dashboard.
+- This is an estimator / cost simulator, not a billing dashboard.
 - Pricing data is manually collected from official provider pricing pages.
-- Prices may change after the `checkedDate`.
+- Prices may change after the checked date.
 - This project does not call real AI model APIs.
 - No API key is required for the core calculator.
 - The calculator does not include taxes, free tiers, enterprise discounts,
   regional pricing, latency, model quality, reliability, or rate limits.
-- Token usage varies by tokenizer, language, and provider; the averages you
-  enter are rough assumptions.
+- Token usage varies by tokenizer, language, provider, prompt style, and product
+  behavior.
+- Scenario-specific parameters such as RAG `topK`, Agent calls per task, code
+  context size, and summarizer compression ratio are educated defaults, not
+  measurements of your real product.
+- Cache hit rate is not included in the P0 calculator.
+- Unit economics are computed from user-input assumptions and do not reflect
+  real revenue or billing data.
+- Third-party pricing aggregators, if added later, should only be optional
+  references and must be clearly labeled.
 
 ## No API key required
 
-The core calculator runs entirely in the browser. There is no server-side
-API call, no proxy, and no key of any kind. This makes the app safe to deploy
-publicly and safe to share.
+The core calculator runs entirely in the browser. It does not call OpenAI,
+Anthropic, Google, OpenRouter, LiteLLM, or any other model or pricing API.
 
 ## Future work
 
-- URL-based sharing of the current scenario + usage
-- Copy-link button
-- Budget mode (reverse-solve max requests from a fixed budget)
-- Data freshness indicator (Fresh / OK / Stale badge)
-- USD / CNY toggle (with a fixed demo rate and clear labeling)
-- Copy-as-report (plain-text / Markdown summary)
+- URL-based sharing
+- Copy share link
+- Budget mode
+- Cache hit rate simulation
+- Gross margin with subscription-price input
+- Copy Markdown report
+- Data freshness badge
+- USD / CNY toggle with a fixed demo rate
+- Text token estimator
 - Image and multimodal cost estimator
-- Token estimator (real tokenizer when feasible, with rough fallback)
-- OpenRouter / LiteLLM aggregator as an optional reference source
+- Embedding and rerank cost estimation
+- Optional OpenRouter / LiteLLM reference data
+- Multi-model composition, such as planner plus final answer models
+- Export JSON / Markdown report
+- Automated pricing change detection
 
 ## Project structure
 
 ```text
 app/
-  page.tsx          # Client component, composes the whole page
-  layout.tsx        # Root layout, metadata, fonts
-  globals.css       # Tailwind entry + small global tweaks
+  page.tsx
+  layout.tsx
+  globals.css
 components/
   ScenarioPresets.tsx
+  ScenarioParams.tsx
   UsageForm.tsx
   CostSummary.tsx
+  SavingsComparison.tsx
   CostTable.tsx
   PricingSources.tsx
   KnownLimitations.tsx
 lib/
-  safeNumber.ts     # Input sanitization + safe divide
-  pricing.ts        # Manual model price snapshot
-  calculate.ts      # Monthly request / cost formulas
-  scenarios.ts      # 5 preset scenarios
+  safeNumber.ts
+  pricing.ts
+  scenarios.ts
+  scenarioTokens.ts
+  calculate.ts
+scripts/
+  smoke-test.ts
 ```
 
 ## License
