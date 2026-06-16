@@ -9,6 +9,7 @@ import { PricingSources } from "@/components/PricingSources";
 import { SavingsComparison } from "@/components/SavingsComparison";
 import { ScenarioParams } from "@/components/ScenarioParams";
 import { ScenarioPresets } from "@/components/ScenarioPresets";
+import { TokenEstimator } from "@/components/TokenEstimator";
 import { UsageForm } from "@/components/UsageForm";
 import { computeCostReport } from "@/lib/calculate";
 import type { UsageInput } from "@/lib/calculate";
@@ -44,6 +45,55 @@ export default function Home() {
     setActiveScenarioId(next.id);
     setScenarioParams(next.params);
     setUsage(next.usage);
+  };
+
+  const handleApplyTokenEstimate = (tokens: number) => {
+    const safeTokens = Number.isFinite(tokens) && tokens >= 0 ? tokens : 0;
+
+    setScenarioParams((current) => {
+      switch (current.kind) {
+        case "chatbot":
+          return {
+            ...current,
+            values: {
+              ...current.values,
+              userMessageTokens: safeTokens,
+            },
+          };
+        case "rag":
+          return {
+            ...current,
+            values: {
+              ...current.values,
+              userQuestionTokens: safeTokens,
+            },
+          };
+        case "agent":
+          return {
+            ...current,
+            values: {
+              ...current.values,
+              toolResultTokens: safeTokens,
+            },
+          };
+        case "code":
+          return {
+            ...current,
+            values: {
+              ...current.values,
+              codeContextTokens: safeTokens,
+            },
+          };
+        case "summarizer":
+          return {
+            ...current,
+            values: {
+              ...current.values,
+              documentTokens: safeTokens,
+            },
+          };
+      }
+    });
   };
 
   const tokenEstimate = useMemo(
@@ -116,6 +166,11 @@ export default function Home() {
           tokenEstimate={tokenEstimate}
           copy={copy.scenarioParams}
           onChange={setScenarioParams}
+        />
+        <TokenEstimator
+          scenarioKind={scenarioParams.kind}
+          copy={copy.tokenEstimator}
+          onApply={handleApplyTokenEstimate}
         />
         <UsageForm usage={usage} copy={copy.usage} onChange={setUsage} />
         <CostSummary report={report} copy={copy.summary} />

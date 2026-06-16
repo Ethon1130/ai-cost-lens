@@ -19,6 +19,9 @@ with the real URL after deployment).
 - Lets you tune scenario-specific token assumptions such as RAG `topK`, chunk
   size, Agent calls per task, code context length, and summarizer compression
   ratio.
+- Includes a local GPT tokenizer text estimator so you can paste real prompts,
+  code, documents, or tool results before applying the count to the active
+  scenario.
 - Computes monthly requests, monthly input tokens, monthly output tokens, input
   cost, output cost, and total monthly cost.
 - Compares 6 models across OpenAI, Anthropic, and Google using manually checked
@@ -37,6 +40,9 @@ with the real URL after deployment).
 - Optional active-user input for product economics, without changing token cost
 - Editable scenario assumptions for chatbot, RAG, agent, code assistant, and
   summarizer workflows
+- OpenAI/GPT text token estimator powered by `js-tiktoken`
+- One-click application from the text estimator into the current scenario's
+  most relevant token field
 - Safe numeric input handling for empty, invalid, negative, and extreme values
 - Input/output cost split per model
 - Unit economics summary
@@ -98,6 +104,8 @@ No environment variables are required.
   regional pricing, latency, model quality, reliability, or rate limits.
 - Token usage varies by tokenizer, language, provider, prompt style, and product
   behavior.
+- The text token estimator uses an OpenAI/GPT tokenizer in the browser. Claude,
+  Gemini, and other providers may count the same text differently.
 - Scenario-specific parameters such as RAG `topK`, Agent calls per task, code
   context size, and summarizer compression ratio are educated defaults, not
   measurements of your real product.
@@ -122,7 +130,6 @@ Anthropic, Google, OpenRouter, LiteLLM, or any other model or pricing API.
 - Copy Markdown report
 - Data freshness badge
 - USD / CNY toggle with a fixed demo rate
-- Text token estimator
 - Image and multimodal cost estimator
 - Embedding and rerank cost estimation
 - Optional OpenRouter / LiteLLM reference data
@@ -140,6 +147,7 @@ app/
 components/
   ScenarioPresets.tsx
   ScenarioParams.tsx
+  TokenEstimator.tsx
   UsageForm.tsx
   CostSummary.tsx
   SavingsComparison.tsx
