@@ -7,11 +7,6 @@ export type ScenarioKind =
   | "code"
   | "summarizer";
 
-export interface TrafficInput {
-  dailyUsers: number;
-  requestsPerUserPerDay: number;
-}
-
 export interface ChatbotParams {
   systemPromptTokens: number;
   userMessageTokens: number;
@@ -62,7 +57,6 @@ export interface ScenarioPreset {
   id: string;
   title: string;
   description: string;
-  traffic: TrafficInput;
   params: ScenarioParams;
   usage: UsageInput;
 }
@@ -73,10 +67,6 @@ export const SCENARIOS: ScenarioPreset[] = [
     title: "AI Chatbot MVP",
     description:
       "A small chat product with short system prompts and brief replies.",
-    traffic: {
-      dailyUsers: 200,
-      requestsPerUserPerDay: 4,
-    },
     params: {
       kind: "chatbot",
       values: {
@@ -87,8 +77,9 @@ export const SCENARIOS: ScenarioPreset[] = [
       },
     },
     usage: {
-      dailyUsers: 200,
-      requestsPerUserPerDay: 4,
+      requestsPerDay: 800,
+      daysPerMonth: 30,
+      activeUsers: 200,
       avgInputTokens: 380,
       avgOutputTokens: 300,
     },
@@ -98,10 +89,6 @@ export const SCENARIOS: ScenarioPreset[] = [
     title: "RAG Knowledge Base",
     description:
       "Retrieval-augmented Q&A with medium-length context chunks injected per query.",
-    traffic: {
-      dailyUsers: 300,
-      requestsPerUserPerDay: 3,
-    },
     params: {
       kind: "rag",
       values: {
@@ -113,8 +100,9 @@ export const SCENARIOS: ScenarioPreset[] = [
       },
     },
     usage: {
-      dailyUsers: 300,
-      requestsPerUserPerDay: 3,
+      requestsPerDay: 900,
+      daysPerMonth: 30,
+      activeUsers: 300,
       avgInputTokens: 1500,
       avgOutputTokens: 400,
     },
@@ -124,10 +112,6 @@ export const SCENARIOS: ScenarioPreset[] = [
     title: "Code Assistant",
     description:
       "Long file context plus medium-length code suggestions.",
-    traffic: {
-      dailyUsers: 150,
-      requestsPerUserPerDay: 5,
-    },
     params: {
       kind: "code",
       values: {
@@ -138,8 +122,9 @@ export const SCENARIOS: ScenarioPreset[] = [
       },
     },
     usage: {
-      dailyUsers: 150,
-      requestsPerUserPerDay: 5,
+      requestsPerDay: 750,
+      daysPerMonth: 30,
+      activeUsers: 150,
       avgInputTokens: 2000,
       avgOutputTokens: 800,
     },
@@ -149,10 +134,6 @@ export const SCENARIOS: ScenarioPreset[] = [
     title: "AI Agent Workflow",
     description:
       "Multi-step agent loop with planning, tool calls and final answers per user turn.",
-    traffic: {
-      dailyUsers: 100,
-      requestsPerUserPerDay: 6,
-    },
     params: {
       kind: "agent",
       values: {
@@ -164,8 +145,9 @@ export const SCENARIOS: ScenarioPreset[] = [
       },
     },
     usage: {
-      dailyUsers: 100,
-      requestsPerUserPerDay: 6,
+      requestsPerDay: 600,
+      daysPerMonth: 30,
+      activeUsers: 100,
       avgInputTokens: 3200,
       avgOutputTokens: 2000,
     },
@@ -175,10 +157,6 @@ export const SCENARIOS: ScenarioPreset[] = [
     title: "Document Summarizer",
     description:
       "Users paste long documents and the model returns a concise summary.",
-    traffic: {
-      dailyUsers: 250,
-      requestsPerUserPerDay: 2,
-    },
     params: {
       kind: "summarizer",
       values: {
@@ -187,8 +165,9 @@ export const SCENARIOS: ScenarioPreset[] = [
       },
     },
     usage: {
-      dailyUsers: 250,
-      requestsPerUserPerDay: 2,
+      requestsPerDay: 500,
+      daysPerMonth: 30,
+      activeUsers: 250,
       avgInputTokens: 4000,
       avgOutputTokens: 300,
     },

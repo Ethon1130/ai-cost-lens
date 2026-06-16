@@ -1,12 +1,11 @@
 import { safeDivide, toSafeNumber } from "./safeNumber";
 import type { ModelCostBreakdown, ModelPrice } from "./pricing";
 
-const DAYS_PER_MONTH = 30;
-
 /** Core usage assumptions, all already passed through toSafeNumber. */
 export interface UsageInput {
-  dailyUsers: number;
-  requestsPerUserPerDay: number;
+  requestsPerDay: number;
+  daysPerMonth: number;
+  activeUsers: number;
   avgInputTokens: number;
   avgOutputTokens: number;
 }
@@ -35,21 +34,33 @@ export interface CostReport {
  * Every field goes through `toSafeNumber` so the calculator never sees bad data.
  */
 export function sanitizeUsage(input: {
-  dailyUsers: unknown;
-  requestsPerUserPerDay: unknown;
+  requestsPerDay: unknown;
+  daysPerMonth: unknown;
+  activeUsers: unknown;
   avgInputTokens: unknown;
   avgOutputTokens: unknown;
 }): UsageInput {
   return {
-    dailyUsers: toSafeNumber(input.dailyUsers, 0),
-    requestsPerUserPerDay: toSafeNumber(input.requestsPerUserPerDay, 0),
+    requestsPerDay: toSafeNumber(input.requestsPerDay, 0),
+    daysPerMonth: toSafeNumber(input.daysPerMonth, 30, {
+      min: 0,
+      max: 31,
+      integer: true,
+    }),
+    activeUsers: toSafeNumber(input.activeUsers, 0),
     avgInputTokens: toSafeNumber(input.avgInputTokens, 0),
     avgOutputTokens: toSafeNumber(input.avgOutputTokens, 0),
   };
 }
 
 export function computeMonthlyRequests(usage: UsageInput): number {
-  return usage.dailyUsers * usage.requestsPerUserPerDay * DAYS_PER_MONTH;
+  const requestsPerDay = toSafeNumber(usage.requestsPerDay, 0);
+  const daysPerMonth = toSafeNumber(usage.daysPerMonth, 30, {
+    min: 0,
+    max: 31,
+    integer: true,
+  });
+  return requestsPerDay * daysPerMonth;
 }
 
 function computeForModel(
@@ -69,7 +80,7 @@ function computeForModel(
     costPerRequest * 1000;
   const costPerActiveUserPerMonth = safeDivide(
     totalCost,
-    usage.dailyUsers,
+    usage.activeUsers,
     0,
   );
 

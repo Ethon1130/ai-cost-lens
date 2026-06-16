@@ -4,13 +4,15 @@ import {
   formatUsd,
 } from "@/lib/calculate";
 import type { CostReport } from "@/lib/calculate";
+import type { AppCopy } from "@/lib/i18n";
 import { MODELS } from "@/lib/pricing";
 
 interface CostSummaryProps {
   report: CostReport;
+  copy: AppCopy["summary"];
 }
 
-export function CostSummary({ report }: CostSummaryProps) {
+export function CostSummary({ report, copy }: CostSummaryProps) {
   const cheapest = report.cheapestModelId
     ? MODELS.find((m) => m.model === report.cheapestModelId)
     : null;
@@ -29,52 +31,51 @@ export function CostSummary({ report }: CostSummaryProps) {
           <h2
             id="summary-heading"
             className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
-          >
-            4. Unit economics summary
+        >
+            {copy.heading}
           </h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Summary uses the cheapest model in the current pricing snapshot.
-            The full per-model breakdown follows below.
+            {copy.description}
           </p>
         </div>
         {cheapest ? (
           <span
             className="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
-            title="Lowest monthly total cost across the snapshot models."
+            title={copy.cheapestTitle}
           >
-            Cheapest: {cheapest.displayName}
+            {copy.cheapest}: {cheapest.displayName}
           </span>
         ) : null}
       </div>
       <dl className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
         <Metric
-          label="Monthly cost"
+          label={copy.monthlyCost}
           value={formatUsd(report.cheapestTotalCost)}
         />
         <Metric
-          label="Cost / request"
+          label={copy.costPerRequest}
           value={formatUsd(cheapestBreakdown?.costPerRequest ?? 0)}
         />
         <Metric
-          label="Cost / 1K requests"
+          label={copy.costPer1KRequests}
           value={formatUsd(cheapestBreakdown?.costPer1KRequests ?? 0)}
         />
         <Metric
-          label="Cost / user / mo"
+          label={copy.costPerUserPerMonth}
           value={formatUsd(cheapestBreakdown?.costPerActiveUserPerMonth ?? 0)}
         />
       </dl>
       <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
         <Metric
-          label="Monthly requests"
+          label={copy.monthlyRequests}
           value={formatRequests(report.monthlyRequests)}
         />
         <Metric
-          label="Input tokens / mo"
+          label={copy.inputTokensPerMonth}
           value={formatTokens(report.monthlyInputTokens)}
         />
         <Metric
-          label="Output tokens / mo"
+          label={copy.outputTokensPerMonth}
           value={formatTokens(report.monthlyOutputTokens)}
         />
       </dl>
@@ -86,9 +87,7 @@ export function CostSummary({ report }: CostSummaryProps) {
             : "text-amber-700 dark:text-amber-400",
         ].join(" ")}
       >
-        {hasTraffic
-          ? "Costs are estimates based on the snapshot prices below. They do not include free tiers, taxes, enterprise discounts, or rate limits."
-          : "Enter some traffic in step 3 to see real numbers."}
+        {hasTraffic ? copy.estimateNote : copy.noTraffic}
       </p>
     </section>
   );

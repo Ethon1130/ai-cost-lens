@@ -1,6 +1,11 @@
 import { getModelsByProvider } from "@/lib/pricing";
+import type { AppCopy } from "@/lib/i18n";
 
-export function PricingSources() {
+interface PricingSourcesProps {
+  copy: AppCopy["sources"];
+}
+
+export function PricingSources({ copy }: PricingSourcesProps) {
   const grouped = getModelsByProvider();
   const providers = Object.keys(grouped) as (keyof typeof grouped)[];
 
@@ -14,12 +19,10 @@ export function PricingSources() {
           id="sources-heading"
           className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
         >
-          7. Pricing sources
+          {copy.heading}
         </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          All numbers are manually collected from each provider&apos;s official
-          pricing page. The &ldquo;Checked&rdquo; date is when the snapshot was
-          last verified.
+          {copy.description}
         </p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -38,11 +41,11 @@ export function PricingSources() {
                     {m.displayName}
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500">
-                    Input {formatUsdShort(m.inputPer1M)} / 1M - Output{" "}
-                    {formatUsdShort(m.outputPer1M)} / 1M
+                    {copy.input} {formatUsdShort(m.inputPer1M)} / 1M -{" "}
+                    {copy.output} {formatUsdShort(m.outputPer1M)} / 1M
                   </div>
                   <div className="text-xs text-zinc-500 dark:text-zinc-500">
-                    Checked: {m.checkedDate}
+                    {copy.checked}: {m.checkedDate}
                   </div>
                   {m.notes ? (
                     <div className="text-xs text-zinc-500 dark:text-zinc-500">

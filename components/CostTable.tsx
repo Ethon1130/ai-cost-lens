@@ -1,11 +1,13 @@
 import { formatUsd } from "@/lib/calculate";
 import type { CostReport } from "@/lib/calculate";
+import type { AppCopy } from "@/lib/i18n";
 
 interface CostTableProps {
   report: CostReport;
+  copy: AppCopy["table"];
 }
 
-export function CostTable({ report }: CostTableProps) {
+export function CostTable({ report, copy }: CostTableProps) {
   return (
     <section aria-labelledby="table-heading" className="space-y-3">
       <div>
@@ -13,10 +15,10 @@ export function CostTable({ report }: CostTableProps) {
           id="table-heading"
           className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
         >
-          6. Per-model monthly cost
+          {copy.heading}
         </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Scroll horizontally on small screens. Cheapest model is highlighted.
+          {copy.description}
         </p>
       </div>
       <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
@@ -24,28 +26,28 @@ export function CostTable({ report }: CostTableProps) {
           <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-900/60 dark:text-zinc-400">
             <tr>
               <th scope="col" className="px-4 py-3 font-medium">
-                Model
+                {copy.model}
               </th>
               <th scope="col" className="px-4 py-3 font-medium">
-                Provider
+                {copy.provider}
               </th>
               <th scope="col" className="px-4 py-3 text-right font-medium">
-                Input
+                {copy.input}
               </th>
               <th scope="col" className="px-4 py-3 text-right font-medium">
-                Output
+                {copy.output}
               </th>
               <th scope="col" className="px-4 py-3 text-right font-medium">
-                Total / mo
+                {copy.totalPerMonth}
               </th>
               <th scope="col" className="px-4 py-3 text-right font-medium">
-                Per req
+                {copy.perRequest}
               </th>
               <th scope="col" className="px-4 py-3 text-right font-medium">
-                Per 1k req
+                {copy.per1KRequests}
               </th>
               <th scope="col" className="px-4 py-3 text-right font-medium">
-                Per user / mo
+                {copy.perUserPerMonth}
               </th>
             </tr>
           </thead>
@@ -69,7 +71,7 @@ export function CostTable({ report }: CostTableProps) {
                       <span>{b.model.displayName}</span>
                       {isCheapest ? (
                         <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                          Cheapest
+                          {copy.cheapest}
                         </span>
                       ) : null}
                     </div>

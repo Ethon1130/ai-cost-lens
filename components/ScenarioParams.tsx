@@ -1,12 +1,14 @@
 import type {
   ScenarioParams as ScenarioParamsType,
 } from "@/lib/scenarios";
+import type { AppCopy } from "@/lib/i18n";
 import type { ScenarioTokenEstimate } from "@/lib/scenarioTokens";
 import { toSafeNumber } from "@/lib/safeNumber";
 
 interface ScenarioParamsProps {
   params: ScenarioParamsType;
   tokenEstimate: ScenarioTokenEstimate;
+  copy: AppCopy["scenarioParams"];
   onChange: (params: ScenarioParamsType) => void;
 }
 
@@ -22,6 +24,7 @@ interface FieldConfig<T extends object> {
 export function ScenarioParams({
   params,
   tokenEstimate,
+  copy,
   onChange,
 }: ScenarioParamsProps) {
   return (
@@ -31,19 +34,18 @@ export function ScenarioParams({
           id="scenario-params-heading"
           className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
         >
-          2. Tune scenario assumptions
+          {copy.heading}
         </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          These fields drive the average input and output tokens for the active
-          scenario. Hidden fields from other scenarios are reset when you switch.
+          {copy.description}
         </p>
       </div>
-      {renderFields(params, onChange)}
+      {renderFields(params, copy, onChange)}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <MetricCard label="Avg input / request" value={tokenEstimate.avgInputTokens} />
-        <MetricCard label="Avg output / request" value={tokenEstimate.avgOutputTokens} />
+        <MetricCard label={copy.avgInput} value={tokenEstimate.avgInputTokens} />
+        <MetricCard label={copy.avgOutput} value={tokenEstimate.avgOutputTokens} />
         <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-400">
-          {tokenEstimate.note}
+          {copy.notes[params.kind] ?? tokenEstimate.note}
         </div>
       </div>
     </section>
@@ -52,8 +54,12 @@ export function ScenarioParams({
 
 function renderFields(
   params: ScenarioParamsType,
+  copy: AppCopy["scenarioParams"],
   onChange: (params: ScenarioParamsType) => void,
 ) {
+  const field = (key: string, fallback: { label: string; hint: string }) =>
+    copy.fields[key] ?? fallback;
+
   switch (params.kind) {
     case "chatbot":
       return (
@@ -62,23 +68,31 @@ function renderFields(
           fields={[
             {
               key: "systemPromptTokens",
-              label: "System prompt tokens",
-              hint: "Persona, guardrails, and product instructions.",
+              ...field("systemPromptTokens", {
+                label: "System prompt tokens",
+                hint: "Persona, guardrails, and product instructions.",
+              }),
             },
             {
               key: "userMessageTokens",
-              label: "User message tokens",
-              hint: "Average user message length.",
+              ...field("userMessageTokens", {
+                label: "User message tokens",
+                hint: "Average user message length.",
+              }),
             },
             {
               key: "historyTokens",
-              label: "Recent history tokens",
-              hint: "Conversation context carried into each request.",
+              ...field("historyTokens", {
+                label: "Recent history tokens",
+                hint: "Conversation context carried into each request.",
+              }),
             },
             {
               key: "answerTokens",
-              label: "Answer tokens",
-              hint: "Average model response length.",
+              ...field("answerTokens", {
+                label: "Answer tokens",
+                hint: "Average model response length.",
+              }),
             },
           ]}
           onChange={(values) => onChange({ kind: "chatbot", values })}
@@ -91,30 +105,40 @@ function renderFields(
           fields={[
             {
               key: "systemPromptTokens",
-              label: "System prompt tokens",
-              hint: "Instructions used for every RAG answer.",
+              ...field("systemPromptTokens", {
+                label: "System prompt tokens",
+                hint: "Instructions used for every RAG answer.",
+              }),
             },
             {
               key: "userQuestionTokens",
-              label: "User question tokens",
-              hint: "Average question length.",
+              ...field("userQuestionTokens", {
+                label: "User question tokens",
+                hint: "Average question length.",
+              }),
             },
             {
               key: "topK",
-              label: "Retrieved chunks",
-              hint: "How many chunks are injected per request.",
+              ...field("topK", {
+                label: "Retrieved chunks",
+                hint: "How many chunks are injected per request.",
+              }),
               integer: true,
               max: 50,
             },
             {
               key: "avgChunkTokens",
-              label: "Avg chunk tokens",
-              hint: "Average token length per retrieved chunk.",
+              ...field("avgChunkTokens", {
+                label: "Avg chunk tokens",
+                hint: "Average token length per retrieved chunk.",
+              }),
             },
             {
               key: "answerTokens",
-              label: "Answer tokens",
-              hint: "Average grounded answer length.",
+              ...field("answerTokens", {
+                label: "Answer tokens",
+                hint: "Average grounded answer length.",
+              }),
             },
           ]}
           onChange={(values) => onChange({ kind: "rag", values })}
@@ -127,32 +151,42 @@ function renderFields(
           fields={[
             {
               key: "baseCalls",
-              label: "Base calls / task",
-              hint: "Planned model calls before retries.",
+              ...field("baseCalls", {
+                label: "Base calls / task",
+                hint: "Planned model calls before retries.",
+              }),
               integer: true,
               max: 100,
             },
             {
               key: "retries",
-              label: "Retries / task",
-              hint: "Average extra calls from retries or revisions.",
+              ...field("retries", {
+                label: "Retries / task",
+                hint: "Average extra calls from retries or revisions.",
+              }),
               integer: true,
               max: 100,
             },
             {
               key: "systemPromptTokens",
-              label: "System prompt tokens",
-              hint: "Agent instructions included on each call.",
+              ...field("systemPromptTokens", {
+                label: "System prompt tokens",
+                hint: "Agent instructions included on each call.",
+              }),
             },
             {
               key: "toolResultTokens",
-              label: "Tool result tokens",
-              hint: "Average tool output returned to the model.",
+              ...field("toolResultTokens", {
+                label: "Tool result tokens",
+                hint: "Average tool output returned to the model.",
+              }),
             },
             {
               key: "finalAnswerTokens",
-              label: "Answer tokens / call",
-              hint: "Average output per model call.",
+              ...field("finalAnswerTokens", {
+                label: "Answer tokens / call",
+                hint: "Average output per model call.",
+              }),
             },
           ]}
           onChange={(values) => onChange({ kind: "agent", values })}
@@ -165,25 +199,33 @@ function renderFields(
           fields={[
             {
               key: "codeContextTokens",
-              label: "Code context tokens",
-              hint: "Files, snippets, and diagnostics in context.",
+              ...field("codeContextTokens", {
+                label: "Code context tokens",
+                hint: "Files, snippets, and diagnostics in context.",
+              }),
             },
             {
               key: "userQuestionTokens",
-              label: "User question tokens",
-              hint: "Average developer prompt length.",
+              ...field("userQuestionTokens", {
+                label: "User question tokens",
+                hint: "Average developer prompt length.",
+              }),
             },
             {
               key: "sessionTurns",
-              label: "Session turns",
-              hint: "How many output turns a request usually creates.",
+              ...field("sessionTurns", {
+                label: "Session turns",
+                hint: "How many output turns a request usually creates.",
+              }),
               integer: true,
               max: 100,
             },
             {
               key: "perTurnOutputTokens",
-              label: "Output tokens / turn",
-              hint: "Average code or explanation generated per turn.",
+              ...field("perTurnOutputTokens", {
+                label: "Output tokens / turn",
+                hint: "Average code or explanation generated per turn.",
+              }),
             },
           ]}
           onChange={(values) => onChange({ kind: "code", values })}
@@ -196,13 +238,17 @@ function renderFields(
           fields={[
             {
               key: "documentTokens",
-              label: "Document tokens",
-              hint: "Average input document length.",
+              ...field("documentTokens", {
+                label: "Document tokens",
+                hint: "Average input document length.",
+              }),
             },
             {
               key: "compressionRatio",
-              label: "Compression ratio",
-              hint: "0.075 means output is about 7.5% of the document.",
+              ...field("compressionRatio", {
+                label: "Compression ratio",
+                hint: "0.075 means output is about 7.5% of the document.",
+              }),
               step: 0.01,
               max: 1,
             },

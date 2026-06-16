@@ -43,20 +43,22 @@ check("safeDivide(NaN, 1) -> 0", safeDivide(NaN, 1) === 0);
 
 console.log("\n== sanitizeUsage ==");
 const s1 = sanitizeUsage({
-  dailyUsers: "abc",
-  requestsPerUserPerDay: -3,
+  requestsPerDay: "abc",
+  daysPerMonth: -3,
+  activeUsers: "abc",
   avgInputTokens: "",
   avgOutputTokens: "200",
 });
-check("garbage -> all 0 except valid", s1.dailyUsers === 0 && s1.requestsPerUserPerDay === 0 && s1.avgInputTokens === 0 && s1.avgOutputTokens === 200);
+check("garbage -> all 0 except valid", s1.requestsPerDay === 0 && s1.daysPerMonth === 0 && s1.activeUsers === 0 && s1.avgInputTokens === 0 && s1.avgOutputTokens === 200);
 
 const s2 = sanitizeUsage({
-  dailyUsers: "100",
-  requestsPerUserPerDay: "5",
+  requestsPerDay: "500",
+  daysPerMonth: "30",
+  activeUsers: "100",
   avgInputTokens: "1e9",
   avgOutputTokens: "9e9",
 });
-check("huge numbers accepted", s2.dailyUsers === 100 && s2.avgInputTokens === 1e9 && s2.avgOutputTokens === 9e9);
+check("huge numbers accepted", s2.requestsPerDay === 500 && s2.activeUsers === 100 && s2.avgInputTokens === 1e9 && s2.avgOutputTokens === 9e9);
 
 console.log("\n== boundary computeCostReport ==");
 const zeros = computeCostReport(s1, MODELS);
@@ -75,7 +77,7 @@ assertFinite("huge totalCost", big.models[0].totalCost);
 assertFinite("huge costPerRequest", big.models[0].costPerRequest);
 assertFinite("huge costPer1KRequests", big.models[0].costPer1KRequests);
 assertFinite("huge costPerActiveUserPerMonth", big.models[0].costPerActiveUserPerMonth);
-check("huge monthlyRequests correct", big.monthlyRequests === 100 * 5 * 30);
+check("huge monthlyRequests correct", big.monthlyRequests === 500 * 30);
 
 console.log("\n== 5 scenarios x 6 models ==");
 for (const s of SCENARIOS) {
@@ -121,7 +123,7 @@ const def = {
   avgOutputTokens: defTokens.avgOutputTokens,
 };
 const defR = computeCostReport(def, MODELS);
-const expectedMonthlyReq = def.dailyUsers * def.requestsPerUserPerDay * 30;
+const expectedMonthlyReq = def.requestsPerDay * def.daysPerMonth;
 check("monthlyRequests formula", defR.monthlyRequests === expectedMonthlyReq);
 const flash = defR.models.find((b) => b.model.model === "gemini-1.5-flash")!;
 const expectedInputCost = (expectedMonthlyReq * def.avgInputTokens / 1e6) * flash.model.inputPer1M;
@@ -131,7 +133,7 @@ check("flash outputCost ~ expected", Math.abs(flash.outputCost - expectedOutputC
 check("flash total = input + output", Math.abs(flash.totalCost - (flash.inputCost + flash.outputCost)) < 1e-9);
 check("flash per1k = total/monthlyReq*1000", Math.abs(flash.costPer1KRequests - (flash.totalCost / expectedMonthlyReq) * 1000) < 1e-9);
 check("flash per request = total/monthlyReq", Math.abs(flash.costPerRequest - (flash.totalCost / expectedMonthlyReq)) < 1e-9);
-check("flash per user = total/dailyUsers", Math.abs(flash.costPerActiveUserPerMonth - (flash.totalCost / def.dailyUsers)) < 1e-9);
+check("flash per user = total/activeUsers", Math.abs(flash.costPerActiveUserPerMonth - (flash.totalCost / def.activeUsers)) < 1e-9);
 
 console.log("\n== scenario formula sanity ==");
 const rag = SCENARIOS.find((s) => s.id === "rag-knowledge-base")!;

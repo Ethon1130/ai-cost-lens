@@ -25,7 +25,7 @@ with the real URL after deployment).
   official pricing snapshots.
 - Highlights the cheapest model for the current assumptions.
 - Shows unit economics: monthly cost, cost per request, cost per 1K requests,
-  and cost per active user per month.
+  and optional cost per active user per month.
 - Shows estimated savings when switching from the highest-cost model in the
   snapshot to the cheapest model.
 - Lists official pricing source URLs and checked dates.
@@ -33,13 +33,16 @@ with the real URL after deployment).
 ## Features
 
 - Scenario-specific cost modeling instead of a plain price table
-- Editable traffic assumptions: daily active users and requests per user per day
+- Editable API usage assumptions: requests per day and billable days per month
+- Optional active-user input for product economics, without changing token cost
 - Editable scenario assumptions for chatbot, RAG, agent, code assistant, and
   summarizer workflows
 - Safe numeric input handling for empty, invalid, negative, and extreme values
 - Input/output cost split per model
 - Unit economics summary
 - Model savings comparison
+- Chinese / English language toggle
+- Day / night display mode toggle
 - Mobile-friendly layout with scrollable comparison tables
 - Fully local browser calculation with no API key required
 
@@ -146,6 +149,7 @@ components/
 lib/
   safeNumber.ts
   pricing.ts
+  i18n.ts
   scenarios.ts
   scenarioTokens.ts
   calculate.ts

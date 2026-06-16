@@ -1,16 +1,20 @@
 import type { UsageInput } from "@/lib/calculate";
+import type { AppCopy } from "@/lib/i18n";
 import { toSafeNumber } from "@/lib/safeNumber";
 
 interface UsageFormProps {
   usage: UsageInput;
+  copy: AppCopy["usage"];
   onChange: (usage: UsageInput) => void;
 }
 
 interface FieldProps {
-  id: "dailyUsers" | "requestsPerUserPerDay";
+  id: "requestsPerDay" | "daysPerMonth" | "activeUsers";
   label: string;
   hint: string;
   min?: number;
+  max?: number;
+  integer?: boolean;
   step?: number;
   value: number;
   onChange: (value: number) => void;
@@ -21,6 +25,8 @@ function NumberField({
   label,
   hint,
   min = 0,
+  max,
+  integer,
   step = 1,
   value,
   onChange,
@@ -41,7 +47,7 @@ function NumberField({
         step={step}
         value={Number.isFinite(value) ? value : 0}
         onChange={(e) =>
-          onChange(toSafeNumber(e.target.value, 0, { min }))
+          onChange(toSafeNumber(e.target.value, 0, { min, max, integer }))
         }
         className={[
           "w-full rounded-lg border px-3 py-2 text-sm tabular-nums",
@@ -56,7 +62,7 @@ function NumberField({
   );
 }
 
-export function UsageForm({ usage, onChange }: UsageFormProps) {
+export function UsageForm({ usage, copy, onChange }: UsageFormProps) {
   return (
     <section aria-labelledby="usage-heading" className="space-y-3">
       <div>
@@ -64,27 +70,35 @@ export function UsageForm({ usage, onChange }: UsageFormProps) {
           id="usage-heading"
           className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
         >
-          3. Adjust traffic assumptions
+          {copy.heading}
         </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Traffic inputs are sanitized to non-negative numbers. Average tokens
-          come from the scenario assumptions above.
+          {copy.description}
         </p>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <NumberField
-          id="dailyUsers"
-          label="Daily active users"
-          hint="How many unique users hit your AI feature per day."
-          value={usage.dailyUsers}
-          onChange={(v) => onChange({ ...usage, dailyUsers: v })}
+          id="requestsPerDay"
+          label={copy.requestsPerDay}
+          hint={copy.requestsPerDayHint}
+          value={usage.requestsPerDay}
+          onChange={(v) => onChange({ ...usage, requestsPerDay: v })}
         />
         <NumberField
-          id="requestsPerUserPerDay"
-          label="Requests per user / day"
-          hint="Average number of AI tasks each user runs per day."
-          value={usage.requestsPerUserPerDay}
-          onChange={(v) => onChange({ ...usage, requestsPerUserPerDay: v })}
+          id="daysPerMonth"
+          label={copy.daysPerMonth}
+          hint={copy.daysPerMonthHint}
+          value={usage.daysPerMonth}
+          max={31}
+          integer
+          onChange={(v) => onChange({ ...usage, daysPerMonth: v })}
+        />
+        <NumberField
+          id="activeUsers"
+          label={copy.activeUsers}
+          hint={copy.activeUsersHint}
+          value={usage.activeUsers}
+          onChange={(v) => onChange({ ...usage, activeUsers: v })}
         />
       </div>
     </section>

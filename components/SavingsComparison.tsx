@@ -3,12 +3,14 @@ import {
   formatUsd,
 } from "@/lib/calculate";
 import type { CostReport } from "@/lib/calculate";
+import type { AppCopy } from "@/lib/i18n";
 
 interface SavingsComparisonProps {
   report: CostReport;
+  copy: AppCopy["savings"];
 }
 
-export function SavingsComparison({ report }: SavingsComparisonProps) {
+export function SavingsComparison({ report, copy }: SavingsComparisonProps) {
   const from = report.models.find(
     (b) => b.model.model === report.savingsIfSwitchToCheapest.fromModelId,
   );
@@ -29,29 +31,34 @@ export function SavingsComparison({ report }: SavingsComparisonProps) {
             id="savings-heading"
             className="text-base font-semibold text-emerald-950 dark:text-emerald-100"
           >
-            5. Model savings comparison
+            {copy.heading}
           </h2>
           <p className="mt-1 text-sm text-emerald-900/80 dark:text-emerald-200/80">
-            Estimated savings if the highest-cost model in this snapshot is
-            replaced by the cheapest model for the same traffic and tokens.
+            {copy.description}
           </p>
         </div>
         {to ? (
           <span className="rounded-full bg-emerald-700 px-3 py-1 text-xs font-medium text-white dark:bg-emerald-500 dark:text-emerald-950">
-            Cheapest: {to.model.displayName}
+            {copy.cheapest}: {to.model.displayName}
           </span>
         ) : null}
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Metric label="Monthly savings" value={formatUsd(report.savingsIfSwitchToCheapest.amount)} />
-        <Metric label="Percent savings" value={formatPercent(report.savingsIfSwitchToCheapest.percent)} />
         <Metric
-          label="Comparison"
+          label={copy.monthlySavings}
+          value={formatUsd(report.savingsIfSwitchToCheapest.amount)}
+        />
+        <Metric
+          label={copy.percentSavings}
+          value={formatPercent(report.savingsIfSwitchToCheapest.percent)}
+        />
+        <Metric
+          label={copy.comparison}
           value={
             hasSavings && from && to
-              ? `${from.model.displayName} to ${to.model.displayName}`
-              : "No paid traffic yet"
+              ? `${from.model.displayName} ${copy.to} ${to.model.displayName}`
+              : copy.noPaidTraffic
           }
         />
       </div>
