@@ -42,7 +42,7 @@
 // TODO(P2): Embedding / Rerank 成本估算（RAG 进阶）。
 // TODO(P2): Automated pricing change detection（fetch 官方价格并和快照 diff）。
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { BudgetMode } from "@/components/BudgetMode";
 import { QuickEstimateForm, QuickResults } from "@/components/QuickEstimateForm";
@@ -50,6 +50,7 @@ import { CostSummary } from "@/components/CostSummary";
 import { CostTable } from "@/components/CostTable";
 import { KnownLimitations } from "@/components/KnownLimitations";
 import { ModelComparison } from "@/components/ModelComparison";
+import { ModelCombo } from "@/components/ModelCombo";
 import { PricingSources } from "@/components/PricingSources";
 import { SavingsComparison } from "@/components/SavingsComparison";
 import { ScenarioParams } from "@/components/ScenarioParams";
@@ -66,21 +67,29 @@ import type { ModelPrice } from "@/lib/pricing";
 import { deriveScenarioTokens } from "@/lib/scenarioTokens";
 import { QUICK_SCENARIOS, getQuickScenarioById, getQuickScenarioTokens, getScenarioById, SCENARIOS } from "@/lib/scenarios";
 import type { ScenarioParams as ScenarioParamsType } from "@/lib/scenarios";
+import { decodeStateFromQuery, useUrlStateBridge, type SharedState } from "@/lib/urlState";
+import { ShareLinkButton } from "@/components/ShareLinkButton";
 
 type CalculationMode = "traffic" | "budget";
 type PrimaryMode = "quick" | "advanced";
 
 export default function Home() {
   const defaultScenario = SCENARIOS[0];
+  const defaultQuickScenario =
+    QUICK_SCENARIOS.find((scenario) => scenario.id === "code-assistant") ?? QUICK_SCENARIOS[0];
+
   const [activeScenarioId, setActiveScenarioId] = useState(defaultScenario.id);
-  const [scenarioParams, setScenarioParams] = useState<ScenarioParamsType>(
-    defaultScenario.params,
-  );
+  const [scenarioParams, setScenarioParams] = useState<ScenarioParamsType>(defaultScenario.params);
   const [usage, setUsage] = useState<UsageInput>(defaultScenario.usage);
-  const [calculationMode, setCalculationMode] =
-    useState<CalculationMode>("traffic");
+  const [calculationMode, setCalculationMode] = useState<CalculationMode>("traffic");
   const [monthlyBudget, setMonthlyBudget] = useState(100);
   const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
+  // Filter state shared by CostTable and CostSummary: when the user filters
+  // the table by provider / search, the "Cheapest" indicator and unit
+  // economics follow the visible subset so the summary doesn't disagree
+  // with the table.
+  const [tableSelectedProviders, setTableSelectedProviders] = useState<string[]>([]);
+  const [tableSearchQuery, setTableSearchQuery] = useState<string>("");
   const [language, setLanguage] = useState<Language>("en");
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
   const [currency, setCurrency] = useState<Currency>("USD");
@@ -91,8 +100,6 @@ export default function Home() {
   const [primaryMode, setPrimaryMode] = useState<PrimaryMode>("quick");
 
   // Quick estimation state
-  const defaultQuickScenario =
-    QUICK_SCENARIOS.find((scenario) => scenario.id === "code-assistant") ?? QUICK_SCENARIOS[0];
   const [quickScenarioId, setQuickScenarioId] = useState(defaultQuickScenario.id);
   const [quickApiCallsPerDay, setQuickApiCallsPerDay] = useState(100);
   const [quickDaysPerMonth, setQuickDaysPerMonth] = useState(30);
@@ -106,7 +113,112 @@ export default function Home() {
   const [pricingUpdatedAt, setPricingUpdatedAt] = useState<string>("");
   const [pricingHasCached, setPricingHasCached] = useState<boolean>(false);
 
+  // Hydrate cost-driving state from the URL exactly once on mount. We do
+  // this in a useEffect (not a lazy initializer) so the SSR HTML and the
+  // first client render both use the same default values, avoiding a
+  // hydration mismatch. The ref guard prevents re-applying on re-renders.
+  //
+  // The react-hooks/set-state-in-effect rule is disabled for the body:
+  // this is the canonical "sync external state (URL) into React on mount"
+  // pattern. The setters only fire once (gated by urlHydratedRef), and
+  // the alternative (useSyncExternalStore) buys us nothing because the
+  // server and client snapshots are intentionally different.
+  const urlHydratedRef = useRef(false);
+  useEffect(() => {
+    if (urlHydratedRef.current) return;
+    if (typeof window === "undefined") return;
+    urlHydratedRef.current = true;
+
+    const sp = new URLSearchParams(window.location.search);
+    const initial = decodeStateFromQuery(sp, {
+      primaryMode: "quick",
+      calculationMode: "traffic",
+      activeScenarioId: defaultScenario.id,
+      scenarioParams: defaultScenario.params,
+      usage: defaultScenario.usage,
+      monthlyBudget: 100,
+      quickScenarioId: defaultQuickScenario.id,
+      quickInputIndex: defaultQuickScenario.defaultInputIndex,
+      quickOutputIndex: defaultQuickScenario.defaultOutputIndex,
+      quickApiCallsPerDay: 100,
+      quickDaysPerMonth: 30,
+      quickActiveUsers: 0,
+    });
+    if (!initial || typeof initial !== "object") return;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (initial.primaryMode) setPrimaryMode(initial.primaryMode);
+    if (initial.calculationMode) setCalculationMode(initial.calculationMode);
+    if (initial.activeScenarioId) setActiveScenarioId(initial.activeScenarioId);
+    if (initial.scenarioParams) setScenarioParams(initial.scenarioParams);
+    if (initial.usage) setUsage(initial.usage);
+    if (initial.monthlyBudget !== undefined) setMonthlyBudget(initial.monthlyBudget);
+    if (initial.quickScenarioId) setQuickScenarioId(initial.quickScenarioId);
+    if (initial.quickInputIndex !== undefined) setQuickInputIndex(initial.quickInputIndex);
+    if (initial.quickOutputIndex !== undefined) setQuickOutputIndex(initial.quickOutputIndex);
+    if (initial.quickApiCallsPerDay !== undefined) setQuickApiCallsPerDay(initial.quickApiCallsPerDay);
+    if (initial.quickDaysPerMonth !== undefined) setQuickDaysPerMonth(initial.quickDaysPerMonth);
+    if (initial.quickActiveUsers !== undefined) setQuickActiveUsers(initial.quickActiveUsers);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [defaultScenario, defaultQuickScenario]);
+
   const copy = COPY[language];
+
+  // defaultState mirrors the useState fallbacks (i.e. what the URL would
+  // contain if the user opened a clean link). The bridge uses it for the
+  // omission heuristic (don't put a field in the URL when it equals the
+  // default) and as the fallback when a URL value is missing or invalid.
+  // ponytail: derived from the same defaults the useState initializers
+  // reference, so they can't drift apart.
+  const defaultState = useMemo<SharedState>(
+    () => ({
+      primaryMode: "quick",
+      calculationMode: "traffic",
+      activeScenarioId: defaultScenario.id,
+      scenarioParams: defaultScenario.params,
+      usage: defaultScenario.usage,
+      monthlyBudget: 100,
+      quickScenarioId: defaultQuickScenario.id,
+      quickInputIndex: defaultQuickScenario.defaultInputIndex,
+      quickOutputIndex: defaultQuickScenario.defaultOutputIndex,
+      quickApiCallsPerDay: 100,
+      quickDaysPerMonth: 30,
+      quickActiveUsers: 0,
+    }),
+    [defaultScenario, defaultQuickScenario],
+  );
+
+  const currentState = useMemo<SharedState>(
+    () => ({
+      primaryMode,
+      calculationMode,
+      activeScenarioId,
+      scenarioParams,
+      usage,
+      monthlyBudget,
+      quickScenarioId,
+      quickInputIndex,
+      quickOutputIndex,
+      quickApiCallsPerDay,
+      quickDaysPerMonth,
+      quickActiveUsers,
+    }),
+    [
+      primaryMode,
+      calculationMode,
+      activeScenarioId,
+      scenarioParams,
+      usage,
+      monthlyBudget,
+      quickScenarioId,
+      quickInputIndex,
+      quickOutputIndex,
+      quickApiCallsPerDay,
+      quickDaysPerMonth,
+      quickActiveUsers,
+    ],
+  );
+
+  useUrlStateBridge(currentState, defaultState);
 
   // Load live pricing data from simonw/llm-prices API
   useEffect(() => {
@@ -229,12 +341,15 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-100">
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-14">
-        <header className="space-y-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <header className="relative space-y-5">
+          {/* Project badge: pinned to the top-left of the header, above and
+              outside the title row so it reads as the page-level brand mark
+              rather than a subtitle of the title. */}
+          <span className="absolute -top-2 left-0 z-10 inline-flex items-center rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-medium text-zinc-700 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 sm:-top-3">
+            {copy.hero.badge}
+          </span>
+          <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-start sm:justify-between sm:pt-5">
             <div className="space-y-3">
-              <span className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-                {copy.hero.badge}
-              </span>
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                 {copy.hero.title}
               </h1>
@@ -277,6 +392,7 @@ export default function Home() {
               >
                 {currency === "USD" ? <DollarIcon /> : <YuanIcon />}
               </CurrencyToggleButton>
+              <ShareLinkButton copy={copy.share} />
             </div>
           </div>
         </header>
@@ -378,6 +494,9 @@ export default function Home() {
               currency={currency}
               exchangeRate={exchangeRate}
               models={models}
+              selectedProviders={tableSelectedProviders}
+              searchQuery={tableSearchQuery}
+              filterCopy={{ inView: copy.summary.inView }}
             />
             <SavingsComparison
               report={report}
@@ -401,10 +520,19 @@ export default function Home() {
               exchangeRate={exchangeRate}
               selectedModelIds={selectedModelIds}
               onSelectedModelIdsChange={setSelectedModelIds}
+              selectedProviders={tableSelectedProviders}
+              onSelectedProvidersChange={setTableSelectedProviders}
+              searchQuery={tableSearchQuery}
+              onSearchQueryChange={setTableSearchQuery}
             />
-            {/* TODO(P1): CostTable 下方增加 ModelCombo（模型组合推荐）：
-              A. 全程高质量；B. 80% 便宜 + 20% 高质量；C. 批处理/便宜模型优先。
-              给出月成本、节省比例、适合场景。来源：lib/combo.ts。 */}
+            <ModelCombo
+              usage={computedUsage}
+              models={models}
+              copy={copy.combo}
+              currency={currency}
+              exchangeRate={exchangeRate}
+              scenarioId={activeScenarioId}
+            />
           </>
         ) : (
           <>

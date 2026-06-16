@@ -89,6 +89,7 @@ export interface AppCopy {
     outputTokensPerMonth: string;
     estimateNote: string;
     noTraffic: string;
+    inView: string;
   };
   budget: {
     heading: string;
@@ -100,14 +101,10 @@ export interface AppCopy {
     maxRequests: string;
     costPerRequest: string;
     costPer1KRequests: string;
-    estimatedSpend: string;
-    unusedBudget: string;
     avgInputTokens: string;
     avgOutputTokens: string;
     budgetLabel: string;
     ranking: string;
-    model: string;
-    provider: string;
     note: string;
     noBudget: string;
   };
@@ -162,6 +159,25 @@ export interface AppCopy {
     heading: string;
     items: string[];
   };
+  combo: {
+    heading: string;
+    description: string;
+    anchorLabel: string;
+    anchorHint: string;
+    routerRatioLabel: string;
+    routerRatioHint: string;
+    cheapShare: string;
+    highShare: string;
+    monthlyCost: string;
+    savings: string;
+    savingsNone: string;
+    notEnoughModels: string;
+    caveatsHeading: string;
+    latencyNote: string;
+    schemeA: { name: string; tagline: string };
+    schemeB: { name: string; tagline: string };
+    schemeC: { name: string; tagline: string; unsupported: string };
+  };
   quickEstimate: {
     heading: string;
     description: string;
@@ -193,6 +209,11 @@ export interface AppCopy {
     quickDescription: string;
     advanced: string;
     advancedDescription: string;
+  };
+  share: {
+    buttonLabel: string;
+    copied: string;
+    copyFailed: string;
   };
   quickScenarios: Record<string, {
     title: string;
@@ -399,6 +420,7 @@ export const COPY: Record<Language, AppCopy> = {
       estimateNote:
         "Costs are estimates based on the snapshot prices below. They do not include free tiers, taxes, enterprise discounts, or rate limits.",
       noTraffic: "Enter some traffic in step 3 to see real numbers.",
+      inView: "in current filter",
     },
     budget: {
       heading: "Budget mode",
@@ -412,14 +434,10 @@ export const COPY: Record<Language, AppCopy> = {
       maxRequests: "Max requests",
       costPerRequest: "Cost / request",
       costPer1KRequests: "Cost / 1K requests",
-      estimatedSpend: "Estimated spend",
-      unusedBudget: "Unused budget",
       avgInputTokens: "Input / request",
       avgOutputTokens: "Output / request",
       budgetLabel: "Budget",
       ranking: "Budget runway ranking",
-      model: "Model",
-      provider: "Provider",
       note:
         "This uses the current scenario token assumptions and official pricing snapshot. It is an estimate, not a billing guarantee.",
       noBudget:
@@ -490,6 +508,38 @@ export const COPY: Record<Language, AppCopy> = {
         "Exchange rate is a demo rate (live fetch with 7.25 fallback); not a financial-grade FX quote.",
       ],
     },
+    combo: {
+      heading: "9. Model combo recommendations",
+      description:
+        "Three realistic routing strategies for the same traffic. Pick an anchor model and a cheap-model share, then compare monthly cost and savings.",
+      anchorLabel: "Anchor model",
+      anchorHint: "Used as the all-high baseline and the fallback in the router scheme.",
+      routerRatioLabel: "Cheap-model share",
+      routerRatioHint: "Share of traffic routed to the cheapest model in scheme B.",
+      cheapShare: "Cheap",
+      highShare: "High",
+      monthlyCost: "Monthly cost",
+      savings: "Saves",
+      savingsNone: "No savings — this is the baseline",
+      notEnoughModels:
+        "Need at least 2 models in the snapshot to generate combos.",
+      caveatsHeading: "Caveats",
+      latencyNote: "Max latency: {note}",
+      schemeA: {
+        name: "Scheme A: All-high",
+        tagline: "One model for every request — production, complex Q&A, customer support.",
+      },
+      schemeB: {
+        name: "Scheme B: Router",
+        tagline: "Cheap model handles the bulk, hard cases escalate to the anchor.",
+      },
+      schemeC: {
+        name: "Scheme C: Batch",
+        tagline: "Same anchor model, async batch API with 50% off input and output.",
+        unsupported:
+          "Batch pricing is not available for this provider in the current snapshot.",
+      },
+    },
     quickEstimate: {
       heading: "Quick Estimate",
       description: "Estimate monthly API cost from expected model calls. No token math required.",
@@ -521,6 +571,11 @@ export const COPY: Record<Language, AppCopy> = {
       quickDescription: "Fast API cost estimate",
       advanced: "Advanced Setup",
       advancedDescription: "Tune tokens and scenario parameters",
+    },
+    share: {
+      buttonLabel: "Copy share link",
+      copied: "Link copied",
+      copyFailed: "Copy failed — please copy from address bar",
     },
     quickScenarios: {
       "ai-chatbot": {
@@ -737,6 +792,7 @@ export const COPY: Record<Language, AppCopy> = {
       estimateNote:
         "成本基于下方价格快照估算，不包含免费额度、税费、企业折扣或速率限制。",
       noTraffic: "在第 3 步输入流量后即可看到真实估算数字。",
+      inView: "当前筛选中",
     },
     budget: {
       heading: "预算控制模式",
@@ -749,14 +805,10 @@ export const COPY: Record<Language, AppCopy> = {
       maxRequests: "最多请求量",
       costPerRequest: "每请求成本",
       costPer1KRequests: "每 1K 请求成本",
-      estimatedSpend: "预计花费",
-      unusedBudget: "剩余预算",
       avgInputTokens: "每请求输入",
       avgOutputTokens: "每请求输出",
       budgetLabel: "预算",
       ranking: "预算可跑量排行",
-      model: "模型",
-      provider: "服务商",
       note:
         "这里复用当前场景 token 假设和官方价格快照。结果是估算，不是账单保证。",
       noBudget:
@@ -826,6 +878,36 @@ export const COPY: Record<Language, AppCopy> = {
         "汇率为演示汇率（动态拉取，失败回退 7.25），不是金融级实时报价。",
       ],
     },
+    combo: {
+      heading: "9. 模型组合推荐",
+      description:
+        "同一流量下的三种实用路由策略。选择一个基准模型和便宜模型占比，查看月成本和节省对比。",
+      anchorLabel: "基准模型",
+      anchorHint: "作为方案 A 的全程高级基线，也是方案 B 路由失败时的兜底。",
+      routerRatioLabel: "便宜模型占比",
+      routerRatioHint: "方案 B 中路由到最便宜模型的请求比例。",
+      cheapShare: "便宜",
+      highShare: "高级",
+      monthlyCost: "月成本",
+      savings: "节省",
+      savingsNone: "无节省 —— 即基准方案",
+      notEnoughModels: "快照中至少需要 2 个模型才能生成组合方案。",
+      caveatsHeading: "注意事项",
+      latencyNote: "最大延迟：{note}",
+      schemeA: {
+        name: "方案 A：全程高级",
+        tagline: "所有请求都走同一个模型 —— 适合正式产品、复杂问答、客服对话。",
+      },
+      schemeB: {
+        name: "方案 B：路由分流",
+        tagline: "便宜模型处理大部分请求，复杂问题升级到基准模型。",
+      },
+      schemeC: {
+        name: "方案 C：批处理",
+        tagline: "使用同一个基准模型，异步批处理 API，输入输出各打 5 折。",
+        unsupported: "当前 provider 在快照中未提供批处理价格。",
+      },
+    },
     quickEstimate: {
       heading: "快速估算",
       description: "根据预计模型 API 调用量估算月成本。无需了解 token 计算。",
@@ -857,6 +939,11 @@ export const COPY: Record<Language, AppCopy> = {
       quickDescription: "快速估算 API 成本",
       advanced: "高级设置",
       advancedDescription: "调整 token 和场景参数",
+    },
+    share: {
+      buttonLabel: "复制分享链接",
+      copied: "链接已复制",
+      copyFailed: "复制失败，请手动从地址栏复制",
     },
     quickScenarios: {
       "ai-chatbot": {

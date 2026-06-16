@@ -309,3 +309,32 @@ export function getQuickScenarioTokens(
 export function getScenarioById(id: string): ScenarioPreset | undefined {
   return SCENARIOS.find((s) => s.id === id);
 }
+
+/**
+ * Scenarios that are a good fit for batch APIs (no real-time latency need).
+ * Used by ModelCombo scheme C to flag whether batch mode is a reasonable
+ * alternative for the user's current scenario.
+ */
+const BATCH_FRIENDLY_SCENARIO_IDS: ReadonlySet<string> = new Set([
+  "document-summarizer",
+  "batch-translate",
+  "offline-analysis",
+  "report-generation",
+]);
+
+export function isScenarioBatchFriendly(scenarioId: string | null | undefined): boolean {
+  if (!scenarioId) return false;
+  return BATCH_FRIENDLY_SCENARIO_IDS.has(scenarioId);
+}
+
+export function getBatchLatencyNote(provider: string): string {
+  // Mirrors the note carried in lib/batch.ts; re-exported here to keep the
+  // UI import surface flat.
+  switch (provider) {
+    case "OpenAI":
+    case "Anthropic":
+      return "Up to 24 hours for completion";
+    default:
+      return "Asynchronous; latency depends on the provider";
+  }
+}

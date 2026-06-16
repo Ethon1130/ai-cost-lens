@@ -320,7 +320,7 @@ function FieldGrid<T extends object>({
   onEstimate: (key: string, tokens: number) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {fields.map((field) => (
         <NumberField
           key={String(field.key)}
@@ -375,21 +375,24 @@ function NumberField({
   onEstimate: (tokens: number) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between">
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex h-7 items-center justify-between gap-2">
         <label
           htmlFor={`scenario-${id}`}
-          className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+          className="min-w-0 truncate text-sm font-medium text-zinc-800 dark:text-zinc-200"
+          title={label}
         >
           {label}
         </label>
-        {estimable && (
+        {estimable ? (
           <InlineTokenEstimator
             copy={estimatorCopy}
             fieldLabel={fieldLabel}
             currentValue={value}
             onApply={onEstimate}
           />
+        ) : (
+          <span aria-hidden="true" className="size-7 shrink-0" />
         )}
       </div>
       <input

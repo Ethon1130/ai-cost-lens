@@ -65,10 +65,11 @@ export function InlineTokenEstimator({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  // Reset text when popover opens
-  useEffect(() => {
-    if (open) setText("");
-  }, [open]);
+  function handleToggle() {
+    if (!open) setText("");
+    setOpen((v) => !v);
+  }
+
 
   function handleApply() {
     const final = toSafeNumber(safeTokens, 0, { min: 0, integer: true });
@@ -89,7 +90,7 @@ export function InlineTokenEstimator({
         type="button"
         aria-label={`Estimate tokens for ${fieldLabel}`}
         title={`${copy.applyButton} "${fieldLabel}"`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         className={[
           "inline-flex size-7 items-center justify-center rounded-md border transition-colors",
           "border-zinc-300 bg-white text-zinc-500 hover:border-zinc-500 hover:text-zinc-900",

@@ -17,14 +17,11 @@
  *   trust boundary, so we do not trust it.
  */
 
-import { useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef } from "react";
 
 import { clamp01, toSafeNumber } from "./safeNumber";
 import type { UsageInput } from "./calculate";
 import {
-  QUICK_SCENARIOS,
-  SCENARIOS,
   getQuickScenarioById,
   getScenarioById,
 } from "./scenarios";
@@ -100,16 +97,6 @@ function isPrimaryMode(v: string | null): v is PrimaryMode {
 }
 function isCalculationMode(v: string | null): v is CalculationMode {
   return v === "traffic" || v === "budget";
-}
-
-function readNumber(
-  params: URLSearchParams,
-  key: string,
-  fallback: number,
-  options?: { min?: number; max?: number; integer?: boolean },
-): number {
-  const raw = params.get(key);
-  return toSafeNumber(raw, fallback, options);
 }
 
 function readOptionalNumber(
@@ -289,7 +276,10 @@ function appendScenarioFields(
   params: ScenarioParams,
 ): void {
   const keys = SCENARIO_KEYS[params.kind];
-  const v = params.values as Record<string, number>;
+  // ponytail: ScenarioParams is a discriminated union; for URL serialization we
+  // only need numeric field access by key. The shape of `values` varies per
+  // scenario kind, so a `Record<string, number>` view is the simplest contract.
+  const v = params.values as unknown as Record<string, number>;
   for (const k of keys) {
     if (Number.isFinite(v[k])) sp.set(k, String(v[k]));
   }
@@ -346,30 +336,44 @@ export function encodeStateToQuery(
 }
 
 /**
- * Hook that reads the URL once on mount and writes the URL on state change.
- * The page calls this with the current `state` plus the `defaults` (the
- * "factory fresh" state, used for the URL-omission heuristic and as the
- * fallback for invalid URL values).
+ * Hook that syncs state <-> window URL.
  *
- * The hook also returns a `applyInitial` function that the page should call
- * to apply URL values to its useState setters. We can't apply inside the hook
- * (rules of hooks), so the page wires it up.
+ * - On mount, parses window.location.search ONCE and returns the parsed
+ *   values in `initial`. The page should apply these to its useState
+ *   setters in a useEffect (one-shot) or via lazy initializers.
+ * - On every render, watches `state`; when it diverges from what's
+ *   currently in the URL, debounces (250ms) and writes via
+ *   window.history.replaceState (no Next router involvement, no
+ *   re-render trigger).
+ * - Listens to `popstate` so back/forward navigation re-hydrates the page.
+ *
+ * We read the URL via window.location (not useSearchParams) to avoid
+ * Next's Suspense boundary requirement and to keep the bridge decoupled
+ * from the App Router navigation pipeline.
  */
 export function useUrlStateBridge(state: SharedState, defaults: SharedState) {
-  const searchParams = useSearchParams();
   const hydratedRef = useRef(false);
   const lastWrittenRef = useRef<string>("");
   const writeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mark hydration complete after the first render. This is the boundary
-  // between "URL is the source of truth" (mount) and "state is the source of
-  // truth" (after first render). It exists to prevent an infinite
-  // decode -> setState -> re-render -> decode cycle.
+  // Snapshot of the initial URL state, computed exactly once during the
+  // first render. We use a ref so the returned object reference is stable.
+  const initial = useMemo(() => {
+    if (typeof window === "undefined") return {} as Partial<SharedState>;
+    const sp = new URLSearchParams(window.location.search);
+    return decodeStateFromQuery(sp, defaults);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Mark hydration complete after the first effect runs.
   useEffect(() => {
     hydratedRef.current = true;
   }, []);
 
-  // Write URL on state change, debounced + de-duped.
+  // Write URL on state change, debounced + de-duped. We intentionally do
+  // NOT consult searchParams here — once we own the URL, we own it. This
+  // is the loop-breaker. The caller is responsible for seeding useState
+  // from the URL on mount (via lazy initializers or an early effect).
   useEffect(() => {
     if (!hydratedRef.current) return;
     if (typeof window === "undefined") return;
@@ -385,17 +389,17 @@ export function useUrlStateBridge(state: SharedState, defaults: SharedState) {
         const url = new URL(window.location.href);
         // Preserve any other query keys the user might have added manually
         // (analytics, marketing tags, etc.). Only mutate our known keys.
-        const fresh = encodeStateToQuery(state, defaults);
         for (const k of Array.from(url.searchParams.keys())) {
           if (!isOurKey(k)) url.searchParams.delete(k);
         }
-        for (const [k, v] of fresh.entries()) {
+        for (const [k, v] of sp.entries()) {
           url.searchParams.set(k, v);
         }
         const nextSearch = url.searchParams.toString();
-        const target = url.pathname + (nextSearch ? `?${nextSearch}` : "") + url.hash;
+        const target =
+          url.pathname + (nextSearch ? `?${nextSearch}` : "") + url.hash;
         window.history.replaceState(window.history.state, "", target);
-        lastWrittenRef.current = fresh.toString();
+        lastWrittenRef.current = sp.toString();
       } catch {
         // replaceState can throw in some test/sandbox environments; ignore.
       }
@@ -406,15 +410,7 @@ export function useUrlStateBridge(state: SharedState, defaults: SharedState) {
     };
   }, [state, defaults]);
 
-  // For the page: returns the parsed initial state from the URL, or {} when
-  // the URL has no relevant keys. Also called once on mount; safe to call
-  // again later, but the page should use the values to setState exactly once.
-  const initial = decodeStateFromQuery(
-    new URLSearchParams(searchParams?.toString() ?? ""),
-    defaults,
-  );
-
-  return { initial, hydrated: hydratedRef };
+  return { initial };
 }
 
 function isOurKey(k: string): boolean {
@@ -428,4 +424,5 @@ function isOurKey(k: string): boolean {
 // Re-export the scenario list keys for tests / consumers that want to know
 // which URL keys belong to the calculator.
 export const URL_STATE_KEYS = { ...KEYS } as const;
-export { SCENARIO_KEYS as URL_STATE_SCENARIO_KEYS, SCENARIOS, QUICK_SCENARIOS };
+export { SCENARIO_KEYS as URL_STATE_SCENARIO_KEYS };
+export const URL_STATE_MAX = { ...MAX } as const;

@@ -4,6 +4,34 @@ import type { CostReport } from "@/lib/calculate";
 import type { Currency } from "@/lib/currency";
 import type { AppCopy } from "@/lib/i18n";
 
+type SortKey = "model" | "provider" | "input" | "output" | "total" | "perRequest" | "per1K" | "perUser";
+type SortDir = "asc" | "desc";
+
+function compareBreakdown(
+  a: CostReport["models"][number],
+  b: CostReport["models"][number],
+  key: SortKey,
+): number {
+  switch (key) {
+    case "model":
+      return a.model.displayName.localeCompare(b.model.displayName);
+    case "provider":
+      return a.model.provider.localeCompare(b.model.provider);
+    case "input":
+      return a.inputCost - b.inputCost;
+    case "output":
+      return a.outputCost - b.outputCost;
+    case "total":
+      return a.totalCost - b.totalCost;
+    case "perRequest":
+      return a.costPerRequest - b.costPerRequest;
+    case "per1K":
+      return a.costPer1KRequests - b.costPer1KRequests;
+    case "perUser":
+      return a.costPerActiveUserPerMonth - b.costPerActiveUserPerMonth;
+  }
+}
+
 // TODO(P0): CostTable 增加「成本构成」列拆分：
 //   - 当 cacheHitRate > 0 时，拆出 freshInputCost / cachedInputCost / outputCost 三列
 //   - 当 retryRate > 0 时，增加 retryCost 列
@@ -21,6 +49,12 @@ interface CostTableProps {
   selectedModelIds: string[];
   /** Callback when user changes model selection. */
   onSelectedModelIdsChange: (ids: string[]) => void;
+  /** Optional controlled provider filter (lifted to the parent). */
+  selectedProviders?: string[];
+  onSelectedProvidersChange?: (providers: string[]) => void;
+  /** Optional controlled search query (lifted to the parent). */
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
 }
 
 export function CostTable({
@@ -31,9 +65,45 @@ export function CostTable({
   exchangeRate,
   selectedModelIds,
   onSelectedModelIdsChange,
+  selectedProviders: controlledProviders,
+  onSelectedProvidersChange,
+  searchQuery: controlledSearch,
+  onSearchQueryChange,
 }: CostTableProps) {
-  const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const isProvidersControlled = controlledProviders !== undefined;
+  const isSearchControlled = controlledSearch !== undefined;
+  const [internalProviders, setInternalProviders] = useState<string[]>([]);
+  const [internalSearch, setInternalSearch] = useState("");
+
+  const selectedProviders = isProvidersControlled ? controlledProviders! : internalProviders;
+  const searchQuery = isSearchControlled ? controlledSearch! : internalSearch;
+
+  const setSelectedProviders = (next: string[]) => {
+    if (isProvidersControlled) {
+      onSelectedProvidersChange?.(next);
+    } else {
+      setInternalProviders(next);
+    }
+  };
+  const setSearchQuery = (next: string) => {
+    if (isSearchControlled) {
+      onSearchQueryChange?.(next);
+    } else {
+      setInternalSearch(next);
+    }
+  };
+
+  const [sortKey, setSortKey] = useState<SortKey>("total");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
 
   // Get all unique providers from report models
   const allProviders = useMemo(() => {
@@ -73,8 +143,23 @@ export function CostTable({
       );
     }
 
-    return filtered;
-  }, [report.models, selectedProviders, searchQuery]);
+    // Sort
+    const sorted = [...filtered].sort((a, b) => compareBreakdown(a, b, sortKey));
+    if (sortDir === "desc") sorted.reverse();
+    return sorted;
+  }, [report.models, selectedProviders, searchQuery, sortKey, sortDir]);
+
+  // Cheapest within the currently visible (filtered) set. When the table is
+  // unfiltered this matches the global report.cheapestModelId, so behavior
+  // stays identical for users who don't touch the filter.
+  const visibleCheapestId = useMemo(() => {
+    if (filteredModels.length === 0) return report.cheapestModelId;
+    let best = filteredModels[0];
+    for (const m of filteredModels) {
+      if (m.totalCost < best.totalCost) best = m;
+    }
+    return best.model.model;
+  }, [filteredModels, report.cheapestModelId]);
 
   return (
     <section aria-labelledby="table-heading" className="space-y-3">
@@ -161,30 +246,70 @@ export function CostTable({
               <th scope="col" className="px-4 py-3 w-10 font-medium">
                 <span title={copy.selectForComparison}>{copy.select}</span>
               </th>
-              <th scope="col" className="px-4 py-3 font-medium">
-                {copy.model}
-              </th>
-              <th scope="col" className="px-4 py-3 font-medium">
-                {copy.provider}
-              </th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">
-                {copy.input}
-              </th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">
-                {copy.output}
-              </th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">
-                {copy.totalPerMonth}
-              </th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">
-                {copy.perRequest}
-              </th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">
-                {copy.per1KRequests}
-              </th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">
-                {copy.perUserPerMonth}
-              </th>
+              <SortableTh
+                label={copy.model}
+                sortKey="model"
+                activeKey={sortKey}
+                direction={sortDir}
+                onSort={handleSort}
+                align="left"
+              />
+              <SortableTh
+                label={copy.provider}
+                sortKey="provider"
+                activeKey={sortKey}
+                direction={sortDir}
+                onSort={handleSort}
+                align="left"
+              />
+              <SortableTh
+                label={copy.input}
+                sortKey="input"
+                activeKey={sortKey}
+                direction={sortDir}
+                onSort={handleSort}
+                align="right"
+              />
+              <SortableTh
+                label={copy.output}
+                sortKey="output"
+                activeKey={sortKey}
+                direction={sortDir}
+                onSort={handleSort}
+                align="right"
+              />
+              <SortableTh
+                label={copy.totalPerMonth}
+                sortKey="total"
+                activeKey={sortKey}
+                direction={sortDir}
+                onSort={handleSort}
+                align="right"
+              />
+              <SortableTh
+                label={copy.perRequest}
+                sortKey="perRequest"
+                activeKey={sortKey}
+                direction={sortDir}
+                onSort={handleSort}
+                align="right"
+              />
+              <SortableTh
+                label={copy.per1KRequests}
+                sortKey="per1K"
+                activeKey={sortKey}
+                direction={sortDir}
+                onSort={handleSort}
+                align="right"
+              />
+              <SortableTh
+                label={copy.perUserPerMonth}
+                sortKey="perUser"
+                activeKey={sortKey}
+                direction={sortDir}
+                onSort={handleSort}
+                align="right"
+              />
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -196,7 +321,7 @@ export function CostTable({
               </tr>
             ) : (
               filteredModels.map((b) => {
-                const isCheapest = b.model.model === report.cheapestModelId;
+                const isCheapest = b.model.model === visibleCheapestId;
                 const isSelected = selectedModelIds.includes(b.model.model);
                 const canSelect = isSelected || selectedModelIds.length < 2;
 
@@ -288,6 +413,73 @@ function ChevronDownIcon({ className }: { className?: string }) {
     >
       <path d="m6 9 6 6 6-6" />
     </svg>
+  );
+}
+
+function SortIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m6 15 6-6 6 6" />
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function SortableTh({
+  label,
+  sortKey,
+  activeKey,
+  direction,
+  onSort,
+  align,
+}: {
+  label: string;
+  sortKey: SortKey;
+  activeKey: SortKey;
+  direction: SortDir;
+  onSort: (key: SortKey) => void;
+  align: "left" | "right";
+}) {
+  const isActive = activeKey === sortKey;
+  return (
+    <th
+      scope="col"
+      className={[
+        "px-4 py-3 font-medium",
+        align === "right" ? "text-right" : "text-left",
+      ].join(" ")}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        aria-sort={
+          isActive ? (direction === "asc" ? "ascending" : "descending") : "none"
+        }
+        className={[
+          "inline-flex items-center gap-1 select-none cursor-pointer",
+          "uppercase tracking-wide",
+          isActive
+            ? "text-zinc-900 dark:text-zinc-100"
+            : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200",
+        ].join(" ")}
+      >
+        <span>{label}</span>
+        <SortIcon
+          className={[
+            "size-3 transition-opacity",
+            isActive ? "opacity-100" : "opacity-40",
+          ].join(" ")}
+        />
+      </button>
+    </th>
   );
 }
 

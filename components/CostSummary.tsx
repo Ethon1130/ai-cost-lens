@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   formatRequests,
   formatTokens,
@@ -21,16 +22,71 @@ interface CostSummaryProps {
   currency: Currency;
   exchangeRate: number;
   models: ModelPrice[];
+  /** Optional provider filter (e.g. from the cost table). When non-empty, the
+   *  "Cheapest" indicator and unit-economics numbers are derived from the
+   *  filtered subset instead of the global set. */
+  selectedProviders?: string[];
+  /** Optional free-text search filter, matched against displayName / model / provider. */
+  searchQuery?: string;
+  /** Copy for the "in view" qualifier shown on the cheapest badge. */
+  filterCopy?: {
+    inView: string;
+    allModels?: string;
+  };
 }
 
-export function CostSummary({ report, copy, currency, exchangeRate, models }: CostSummaryProps) {
-  const cheapest = report.cheapestModelId
-    ? models.find((m) => m.model === report.cheapestModelId)
+export function CostSummary({
+  report,
+  copy,
+  currency,
+  exchangeRate,
+  models,
+  selectedProviders = [],
+  searchQuery = "",
+  filterCopy,
+}: CostSummaryProps) {
+  // Derive the "cheapest" indicator from the user-visible subset so it stays
+  // meaningful when the cost table is filtered by provider / search query.
+  // Falls back to the report's global cheapest when no filter is active.
+  const visibleModels = useMemo(() => {
+    let list = report.models;
+    if (selectedProviders.length > 0) {
+      list = list.filter((b) => selectedProviders.includes(b.model.provider));
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (b) =>
+          b.model.displayName.toLowerCase().includes(q) ||
+          b.model.model.toLowerCase().includes(q) ||
+          b.model.provider.toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [report.models, selectedProviders, searchQuery]);
+
+  const visibleCheapest = useMemo(() => {
+    if (visibleModels.length === 0) return null;
+    return visibleModels.reduce((min, b) =>
+      b.totalCost < min.totalCost ? b : min,
+    );
+  }, [visibleModels]);
+
+  const isFiltered = selectedProviders.length > 0 || searchQuery.trim().length > 0;
+  // When a filter is active and yields zero matches, surface a clear empty
+  // state instead of silently falling back to the global cheapest (which
+  // would mislead the user about what they're looking at).
+  const showEmpty = isFiltered && visibleModels.length === 0;
+  const cheapestBreakdown = showEmpty
+    ? null
+    : visibleCheapest ?? report.models.find(
+        (b) => b.model.model === report.cheapestModelId,
+      );
+  const cheapest = cheapestBreakdown
+    ? models.find((m) => m.model === cheapestBreakdown.model.model) ?? null
     : null;
-  const cheapestBreakdown = report.models.find(
-    (b) => b.model.model === report.cheapestModelId,
-  );
   const hasTraffic = report.monthlyRequests > 0;
+  const cheapestMonthlyCost = cheapestBreakdown?.totalCost ?? report.cheapestTotalCost;
 
   return (
     <section
@@ -55,13 +111,25 @@ export function CostSummary({ report, copy, currency, exchangeRate, models }: Co
             title={copy.cheapestTitle}
           >
             {copy.cheapest}: {cheapest.displayName}
+            {isFiltered && filterCopy ? (
+              <span className="ml-1 text-[10px] font-normal opacity-80">
+                ({filterCopy.inView})
+              </span>
+            ) : null}
+          </span>
+        ) : showEmpty && filterCopy ? (
+          <span
+            className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+            title={copy.cheapestTitle}
+          >
+            {copy.cheapest}: —
           </span>
         ) : null}
       </div>
       <dl className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
         <Metric
           label={copy.monthlyCost}
-          value={formatCurrency(report.cheapestTotalCost, currency, exchangeRate)}
+          value={formatCurrency(cheapestMonthlyCost, currency, exchangeRate)}
         />
         <Metric
           label={copy.costPerRequest}
