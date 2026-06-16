@@ -76,7 +76,7 @@ for (const s of SCENARIOS) {
   check(`[${s.id}] produces 6 rows`, r.models.length === 6);
   check(`[${s.id}] cheapest selected`, r.cheapestModelId !== null);
   const allPos = r.models.every((b) => b.totalCost >= 0);
-  check(`[${s.id}] all totals non-negative`, String(allPos));
+  check(`[${s.id}] all totals non-negative`, allPos);
   const sorted = [...r.models].sort((a, b) => a.totalCost - b.totalCost);
   const expectedCheapest = sorted[0].model.model;
   check(
